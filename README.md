@@ -1,61 +1,80 @@
-# 🏝️ Catan Online – JavaScript + Pixi.js
+# Catan JS
 
-## 🎯 מטרת הפרויקט
-פיתוח משחק **Catan אונליין** ב־**JavaScript + HTML** עם גרפיקה ריאליסטית באמצעות **Pixi.js**, חוקים בסיסיים בלבד (המשחק המקורי), ללא תמיכה במובייל, ללא סאונד.  
-המשחק יתארח ב־**GitHub Pages** ויהיה מחולק לקבצים קטנים ונפרדים כדי להקל על פיתוח הדרגתי.
-
----
-
-## 📂 מבנה תיקיות
-core/ - אתחול אפליקציה, מצב גלובלי (state), קבצי בסיס.
-catan/ - רכיבי UI, פאנל משאבים, HUD, כפתורים.
-game/ - לוגיקת משחק: שלב setup, חלוקת משאבים, תורות, שודד.
-build/ - לוגיקת בנייה: יישובים, דרכים, ערים.
-textures/ - טקסטורות ומשאבים גרפיים.
-main.js - נקודת כניסה ראשית למשחק.
-index.js - קובץ טעינה והפעלה.
-index.html - קובץ HTML ראשי.
-style.css - עיצוב בסיסי.
-
-
+A browser-based **Catan** game built in **pure JavaScript, HTML, and CSS**, using **PixiJS** for rendering.  
+Supports **one human player vs bots** with full gameplay mechanics, trading, building, development cards, and win conditions.
 
 ---
 
-## ✅ מה כבר בוצע
-- ציור לוח ריאליסטי עם טקסטורות של ההקסים.
-- שלב **setup** מלא + מצב **DEBUG** שמדלג על setup וממקם 2 יישובים ו־2 דרכים לכל שחקן, כולל חלוקת משאבים על היישוב השני.
-- מערכת HUD עם כפתורים: גלגול קובייה, בניית יישוב, בניית דרך, בניית עיר, סיום תור.
-- מערכת משאבים עם פאנל משאבים לכל שחקן.
-- לוגיקת תורות (snake order ב־setup, רגיל במשחק).
-- הפעלת השודד בעת גלגול 7, כולל בחירת מיקום חדש.
-- חלוקת משאבים לפי גלגול קוביות.
-- קוד מופרד למודולים (core / catan / game / build).
-- פריסה ב־GitHub Pages.
+## 🎯 Features
+
+### **Board & Geometry**
+- Hexagonal board rendering with **pointy-top axial coordinates**.
+- Coastline detection and debug mode to visualize edge indices.
+- Ports (harbors) drawn on correct coastal edges with proper trade ratios.
+- Full **randomization** of terrain tiles and number tokens.
+- **Validation** to prevent 6 and 8 tokens from being adjacent.
+- Desert tile placement with automatic robber initialization.
+
+### **Game Mechanics**
+- Turn-based gameplay: roll dice, collect resources, build, trade, play development cards, end turn.
+- Robber mechanics: move robber, block tile, steal resource from opponent.
+- Dice roll animation.
+- Victory points calculation in real-time:
+  - Settlements & cities.
+  - **Longest Road** (auto-calculated).
+  - **Largest Army** (from Knight cards).
+- Win condition check (first to 10 points ends the game).
+
+### **Building & Actions**
+- Build settlements, roads, and cities with resource cost validation.
+- Resource production from dice rolls.
+- Action buttons auto-enable/disable based on available resources and turn phase.
+
+### **Trading**
+- Bank trade at **4:1** ratio.
+- Port trade at improved ratios (3:1 generic or 2:1 specific resource).
+- Player-to-player trading interface.
+
+### **Development Cards**
+- Purchase development cards (Knight, Road Building, Year of Plenty, Monopoly, Victory Point).
+- Play dev cards with actual effects:
+  - **Knight** → move robber & steal.
+  - **Road Building** → build 2 free roads.
+  - **Year of Plenty** → gain 2 chosen resources.
+  - *(Monopoly can be added as a future enhancement).*
+- Reveal received dev card to player.
+
+### **UI & UX**
+- HUD with vertical buttons on the right side of the screen.
+- Resource panel.
+- Score panel (bottom-right corner).
+- Dice positioned next to Roll button.
+- Ports and board elements rendered with correct alignment and scaling.
+- Debug tools for board layout and coastal edge indices.
 
 ---
 
-## 📝 מה עוד נשאר
-1. **מסחר** בין שחקנים ובנק (כולל 4:1 ו־נמלי מסחר).
-2. **קלפי פיתוח** (אבירים, התקדמות, נקודות ניצחון).
-3. **חישוב ניקוד** בזמן אמת והצגת מנצח.
-4. **הגנות מפני מהלכים לא חוקיים** (למשל — בנייה ללא משאבים מספקים, חסימת מקומות אסורים).
-5. **אנימציית גלגול קוביות** (הייתה, נעלמה — צריך להחזיר).
-6. **UI מותאם יותר** — סידור כפתורים ו־Panels כך שלא יכסו אחד את השני.
-7. **שיפורי גרפיקה** — למשל סימון צמתים/קשתות זמינים, אנימציה לבניינים חדשים.
-8. **שמירה/טעינה של מצב המשחק** (אופציונלי).
+## 📂 Project Structure
+
+src/
+├─ main.js # Main game loop and setup
+├─ board/
+│ ├─ board.js # Board generation, randomization, validation
+│ ├─ initBoard.js # Board rendering and setup
+│ └─ coast.js # Coastline calculation and debugging
+├─ ui/
+│ ├─ index.js # HUD and layout
+│ ├─ button.js # Reusable button component
+│ ├─ diceView.js # Dice rendering and animation
+├─ utils/
+│ └─ geom.js # Hex geometry helpers (axial coords, pixel conversion)
+
 
 ---
 
-## 🛠️ מצב DEBUG
-### מה זה עושה
-- מדלג על שלב ה־setup לחלוטין.
-- נותן לכל שחקן **5 משאבים מכל סוג** בתחילת המשחק.
-- ממקם באופן אוטומטי **2 יישובים ו־2 דרכים** במיקומים תקפים לכל שחקן, כך שהמשחק מוכן מיד להמשך.
-- מתחיל ישירות בשלב ה־**play** עם תור השחקן הראשון.
+## 🚀 How to Run
 
-### איך מפעילים
-בקובץ `main.js`, יש להגדיר:
-```js
-const DEBUG_MODE = true;
-כאשר הערך true — מצב DEBUG פעיל.
-כאשר הערך false — המשחק יתחיל רגיל עם שלב ה־setup.
+1. Clone the repository.
+2. Serve the project via a local server:
+   ```bash
+   npx http-server
