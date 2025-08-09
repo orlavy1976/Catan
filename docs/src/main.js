@@ -10,6 +10,7 @@ import { startSetupPhase } from "./game/setupPhase.js";
 import { distributeResources, summarizeGain } from "./game/resources.js";
 import { makeEndTurn } from "./game/turns.js";
 import { enterRobberMove } from "./game/robber.js";
+import { enterDiscardPhase } from "./game/discard.js";
 import { subscribe, patch } from "./game/stateStore.js";
 import { startBuildRoad } from "./game/buildRoad.js";
 import { startBuildSettlement } from "./game/buildSettlement.js";
@@ -45,17 +46,14 @@ const hud = createHUD(
   root,
   onRolled,
   endTurn,
-  // onBuildRoad
   () => {
     if (state.phase !== "play") return;
     startBuildRoad({ app, boardC, hud, state, graph, builder });
   },
-  // onBuildSettlement
   () => {
     if (state.phase !== "play") return;
     startBuildSettlement({ app, boardC, hud, state, graph, builder });
   },
-  // onBuildCity
   () => {
     if (state.phase !== "play") return;
     startBuildCity({ app, boardC, hud, state, graph, builder });
@@ -81,7 +79,6 @@ const DEBUG_MODE = true; // ← החלף ל-false למשחק רגיל
 if (DEBUG_MODE) {
   debugInit();
 } else {
-  // ---------- Setup Phase (רגיל) ----------
   startSetupPhase({
     app, boardC, hud, resPanel, graph, builder, layout, state,
     onFinish: () => {
@@ -105,25 +102,29 @@ function onRolled({ sum }) {
   if (state.phase !== "play") return;
 
   if (sum === 7) {
-    state.phase = "move-robber";
-    hud.showResult("Rolled 7 — Move the robber");
-    hud.setBottom("Click a tile to move the robber");
+    state.phase = "discard";
+    hud.showResult("Rolled 7 — Discard then move the robber");
+    hud.setBottom("Players with >7 must discard half.");
     hud.setRollEnabled(false);
     hud.setEndEnabled(false);
     hud.setBuildRoadEnabled(false);
     hud.setBuildSettlementEnabled(false);
     hud.setBuildCityEnabled(false);
-    enterRobberMove({
-      app, boardC, hud, state, tileSprites, robberSpriteRef
-    }, () => {
-      state.phase = "play";
-      hud.setBottom("Ready: End Turn");
-      hud.setRollEnabled(false);
-      hud.setEndEnabled(true);
-      hud.setBuildRoadEnabled(false);
-      hud.setBuildSettlementEnabled(false);
-      hud.setBuildCityEnabled(false);
-      hud.showResult("Robber moved.");
+
+    enterDiscardPhase({ hud, state, resPanel }, () => {
+      state.phase = "move-robber";
+      hud.setBottom("Click a tile to move the robber");
+      enterRobberMove({
+        app, boardC, hud, state, tileSprites, robberSpriteRef, graph, layout, resPanel
+      }, () => {
+        state.phase = "play";
+        hud.setBottom("You may build or end the turn");
+        hud.setRollEnabled(true);
+        hud.setEndEnabled(true);
+        hud.setBuildRoadEnabled(true);
+        hud.setBuildSettlementEnabled(true);
+        hud.setBuildCityEnabled(true);
+      });
     });
     return;
   }
@@ -151,7 +152,6 @@ function endTurn() {
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 
-// stage safety
 app.stage.eventMode = 'static';
 app.stage.hitArea = app.screen;
 
@@ -159,7 +159,6 @@ app.stage.hitArea = app.screen;
 // ===== DEBUG HELPERS =====
 // ==========================
 function debugInit() {
-  // 1) לכל שחקן — 5 מכל משאב
   patch(s => {
     s.players.forEach(p => {
       for (const k of Object.keys(p.resources)) p.resources[k] = 5;
@@ -169,25 +168,17 @@ function debugInit() {
     });
   });
 
-  // 2) הצבות יישוב+כביש: סיבוב נחש (1→..→N→N→..→1)
   const occupiedVertices = new Set();
   const occupiedEdges = new Set();
 
-  // פונקציה כללית להצבת יישוב+כביש מחובר
   function placeSettlementAndRoadForPlayer(playerIndex, bias = 0) {
-    // מצא צומת חוקי
     const legalV = builder.legalSettlementVertices(occupiedVertices);
     if (!legalV.length) return;
-
-    // בחר צומת — קצת "מפוזר" לפי bias
     const vId = legalV[(bias * 7 + playerIndex * 3) % legalV.length];
-
-    // עדכן state וצייר יישוב
     patch(s => { s.players[playerIndex].settlements.push(vId); });
     builder.placeSettlement(vId, state.players[playerIndex].colorIdx);
     occupiedVertices.add(vId);
 
-    // מצא כביש חוקי יוצא מהצומת שנבחר
     const legalE = builder.legalRoadEdges(occupiedEdges, occupiedVertices, vId);
     if (legalE.length) {
       const eId = legalE[(bias + playerIndex) % legalE.length];
@@ -195,24 +186,19 @@ function debugInit() {
       builder.placeRoad(eId, state.players[playerIndex].colorIdx);
       occupiedEdges.add(eId);
     }
-
-    return vId; // מחזירים את מזהה הצומת, כדי להעניק משאבים על היישוב השני
+    return vId;
   }
 
   const n = state.players.length;
-
-  // סיבוב ראשון: 1..N
   const secondSpotByPlayer = new Array(n).fill(null);
   for (let i = 0; i < n; i++) {
     placeSettlementAndRoadForPlayer(i, 0);
   }
-  // סיבוב שני: N..1 — ושומרים היכן לשם הענקת משאבים
   for (let i = n - 1; i >= 0; i--) {
     const vId = placeSettlementAndRoadForPlayer(i, 1);
     secondSpotByPlayer[i] = vId;
   }
 
-  // 3) הענקת משאבים על היישוב השני
   for (let i = 0; i < n; i++) {
     const vId = secondSpotByPlayer[i];
     if (vId == null) continue;
@@ -223,7 +209,6 @@ function debugInit() {
     });
   }
 
-  // 4) מעבר למשחק
   state.phase = "play";
   state.turn = 1;
   state.currentPlayer = 1;
@@ -237,7 +222,6 @@ function debugInit() {
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 
-// מחושב משאבי פתיחה לפי צומת (ללא מדבר)
 function computeInitialResourcesForVertex(vertexId) {
   const v = graph.vertices[vertexId];
   const gained = { brick:0, wood:0, wheat:0, sheep:0, ore:0 };
