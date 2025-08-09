@@ -16,7 +16,7 @@ import { startBuildRoad } from "./game/buildRoad.js";
 import { startBuildSettlement } from "./game/buildSettlement.js";
 import { startBuildCity } from "./game/buildCity.js";
 import { startBankTrade } from "./game/trade.js";
-import { rollDice } from "./catan/rules.js"; // 👈 תיקון: נשתמש בגלגול מקומי אם אין פרמטר
+import { rollDice } from "./catan/rules.js";
 
 const { app } = initApp();
 
@@ -66,7 +66,7 @@ const hud = createHUD(
   // onTrade
   () => {
     if (state.phase !== "play") return;
-    startBankTrade({ app, hud, state, resPanel });
+    startBankTrade({ app, hud, state, resPanel, graph }); // 👈 מעבירים גרף
   }
 );
 
@@ -113,7 +113,6 @@ if (DEBUG_MODE) {
 function onRolled(evt) {
   if (state.phase !== "play") return;
 
-  // 👇 תיקון: אם לא התקבל אובייקט, מגלגלים כאן ומציגים קוביות
   const roll = evt ?? rollDice();
   if (hud?.dice && roll?.d1 != null && roll?.d2 != null) {
     try { hud.dice.set(roll.d1, roll.d2); } catch {}
@@ -139,7 +138,7 @@ function onRolled(evt) {
       }, () => {
         state.phase = "play";
         hud.setBottom("You may build, trade, or end the turn");
-        hud.setRollEnabled(true);   // גלגול הבא יהיה בתור הבא
+        hud.setRollEnabled(true);
         hud.setEndEnabled(true);
         hud.setBuildRoadEnabled(true);
         hud.setBuildSettlementEnabled(true);
@@ -193,7 +192,7 @@ function debugInit() {
     });
   });
 
-  // 2) הצבות יישוב+כביש: סיבוב נחש (1→..→N→N→..→1)
+  // 2) הצבות יישוב+כביש: סיבוב נחש (1..N ואז N..1)
   const occupiedVertices = new Set();
   const occupiedEdges = new Set();
 
@@ -215,7 +214,7 @@ function debugInit() {
       occupiedEdges.add(eId);
     }
 
-    return vId; // לזה נחזיר משאבי פתיחה בשלב הבא
+    return vId;
   }
 
   const n = state.players.length;
@@ -249,7 +248,7 @@ function debugInit() {
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 
-// מחושב משאבי פתיחה לפי צומת (ללא מדבר)
+// משאבי פתיחה לפי צומת (ללא מדבר)
 function computeInitialResourcesForVertex(vertexId) {
   const v = graph.vertices[vertexId];
   const gained = { brick:0, wood:0, wheat:0, sheep:0, ore:0 };

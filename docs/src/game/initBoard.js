@@ -1,12 +1,11 @@
-// docs/src/game/initBoard.js
 import { drawBoard } from "../catan/tiles.js";
-import { generateBoard, standardPortsByCoastIndex } from "../catan/board.js";
+import { generateBoard } from "../catan/board.js";
 import { drawToken, drawRobber } from "../catan/tokens.js";
 import { state } from "../core/state.js";
 import { TILE_SIZE } from "../config/constants.js";
-import { computeCoastEdges, drawCoastDebug } from "../catan/coast.js";
+import { computeCoastEdges } from "../catan/coast.js";
 
-const DEBUG_PORTS = false; // שנה ל-true כדי לראות מספור צלעות חוף
+const DEBUG_PORTS = false; // שנה ל-true אם תרצה לראות מספור צלעות חוף (דרך drawCoastDebug)
 
 export function buildBoard(app, root) {
   const layout = generateBoard(); // מערך אריחים עם token/kind
@@ -31,16 +30,28 @@ export function buildBoard(app, root) {
 
   // === חישוב חוף (צלעות חיצוניות) ===
   const coast = computeCoastEdges(axials, TILE_SIZE);
-  if (DEBUG_PORTS) drawCoastDebug(boardC, coast, 0xffffff);
 
-  // === נמלים ===
-  const { types, posIndices } = standardPortsByCoastIndex();
+  // === נמלים לפי אינדקס חוף (כיילת כבר עם הדיבאגר) ===
+  // הסדר תואם לקלאסיק (4×any + 5×ספציפיים, אבל אפשר לשנות בקלות)
+  const types = [
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "wood" },
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "wheat" },
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "sheep" },
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "ore" },
+    { ratio: 2, type: "brick" },
+  ];
+  // אינדקסים לדוגמה—אם צריך לשנות בקלות אחרי הדיבאגר:
+  const posIndices = [2, 5, 8, 11, 14, 18, 21, 24, 27];
+
   const ports = [];
 
   for (let i = 0; i < types.length; i++) {
     const t = types[i];
-    const idx = posIndices[i] % coast.edges.length;
-    const e = coast.edges[idx];
+    const e = coast.edges[posIndices[i] % coast.edges.length];
 
     // נקודת אמצע ודחיפה החוצה
     const push = 26;
@@ -78,18 +89,17 @@ export function buildBoard(app, root) {
 
     boardC.addChild(g);
 
-    // נשמור לוגיקה עתידית למסחר: איזה חוף/צלע
+    // נשמור נתונים מועילים למסחר:
     ports.push({
       ratio: t.ratio,
       type: t.type,
       coastIndex: e.index,
-      axial: e.a,
-      side: e.side,
-      mid: { x: e.mid.x, y: e.mid.y },
+      // חשוב: שומר את נקודות הקצה של צלע החוף בפיקסלים
+      edgePixels: { v1: { x: e.v1.x, y: e.v1.y }, v2: { x: e.v2.x, y: e.v2.y } },
     });
   }
 
-  // לשימוש במסחר בהמשך
+  // לשימוש במסחר
   state.ports = ports;
 
   return { layout, boardC, tileSprites, axials, robberSpriteRef, ports, coast };
