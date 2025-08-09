@@ -1,9 +1,9 @@
 import { initApp, root } from "./core/app.js";
 import { state } from "./core/state.js";
-import { createHUD } from "./catan/ui.js";
+import { createHUD } from "./catan/ui/index.js";
 import { createResourcePanel } from "./catan/resourcePanel.js";
 import { buildGraph } from "./catan/graph.js";
-import { makeBuilder } from "./catan/build.js";
+import { makeBuilder } from "./catan/build/index.js";
 
 import { buildBoard } from "./game/initBoard.js";
 import { startSetupPhase } from "./game/setupPhase.js";
@@ -12,6 +12,8 @@ import { makeEndTurn } from "./game/turns.js";
 import { enterRobberMove } from "./game/robber.js";
 import { subscribe } from "./game/stateStore.js";
 import { startBuildRoad } from "./game/buildRoad.js";
+import { startBuildSettlement } from "./game/buildSettlement.js";
+import { startBuildCity } from "./game/buildCity.js";
 
 const { app } = initApp();
 
@@ -43,16 +45,12 @@ const hud = createHUD(
   root,
   onRolled,
   endTurn,
-  // onBuildRoad
-  () => {
-    if (state.phase !== "play") return;
-    startBuildRoad({ app, boardC, hud, state, graph, builder });
-  }
+  () => { if (state.phase === "play") startBuildRoad({ app, boardC, hud, state, graph, builder }); },
+  () => { if (state.phase === "play") startBuildSettlement({ app, boardC, hud, state, graph, builder }); },
+  () => { if (state.phase === "play") startBuildCity({ app, boardC, hud, state, graph, builder }); }
 );
 
 const resPanel = createResourcePanel(app, state);
-
-// עדכון אוטומטי של הפאנל בכל patch(state)
 subscribe((s) => {
   resPanel.updateResources(s.players);
   resPanel.setCurrent(s.currentPlayer - 1);
@@ -74,7 +72,9 @@ startSetupPhase({
     hud.setBottom(`Ready: Roll Dice`);
     hud.setRollEnabled(true);
     hud.setEndEnabled(false);
-    hud.setBuildEnabled(false); // בנייה הופכת לזמינה רק אחרי גלגול
+    hud.setBuildRoadEnabled(false);
+    hud.setBuildSettlementEnabled(false);
+    hud.setBuildCityEnabled(false);
     resPanel.setCurrent(state.currentPlayer - 1);
   }
 });
@@ -89,15 +89,19 @@ function onRolled({ sum }) {
     hud.setBottom("Click a tile to move the robber");
     hud.setRollEnabled(false);
     hud.setEndEnabled(false);
-    hud.setBuildEnabled(false);
+    hud.setBuildRoadEnabled(false);
+    hud.setBuildSettlementEnabled(false);
+    hud.setBuildCityEnabled(false);
     enterRobberMove({
       app, boardC, hud, state, tileSprites, robberSpriteRef
     }, () => {
       state.phase = "play";
       hud.setBottom("Ready: End Turn");
-      hud.setRollEnabled(false); // כבר גלגלנו בתור הזה
+      hud.setRollEnabled(false);
       hud.setEndEnabled(true);
-      hud.setBuildEnabled(false); // אחרי 7 אין בנייה עד סוף התור
+      hud.setBuildRoadEnabled(false);
+      hud.setBuildSettlementEnabled(false);
+      hud.setBuildCityEnabled(false);
       hud.showResult("Robber moved.");
     });
     return;
@@ -107,20 +111,22 @@ function onRolled({ sum }) {
   const msg = summarizeGain(gain);
   if (msg) hud.showResult(msg);
 
-  // אחרי גלגול רגיל: אפשר לסיים תור ולבנות כביש
   hud.setEndEnabled(true);
-  hud.setBuildEnabled(true);
+  hud.setBuildRoadEnabled(true);
+  hud.setBuildSettlementEnabled(true);
+  hud.setBuildCityEnabled(true);
 }
 
 function endTurn() {
   if (state.phase !== "play") return;
-  makeEndTurn(state)(); // advances player/turn
-
+  makeEndTurn(state)();
   hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
   hud.setBottom(`Ready: Roll Dice`);
   hud.setRollEnabled(true);
   hud.setEndEnabled(false);
-  hud.setBuildEnabled(false); // שחקן הבא יצטרך לגלגל לפני בנייה
+  hud.setBuildRoadEnabled(false);
+  hud.setBuildSettlementEnabled(false);
+  hud.setBuildCityEnabled(false);
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 

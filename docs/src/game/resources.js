@@ -9,11 +9,12 @@ export function distributeResources({ sum, state, layout, graph }) {
     if (t.token === sum && t.kind !== "desert") eligible.push(i);
   }
 
-  // בניית בעלות על צמתים
-  const ownerByVertex = new Map();
-  state.players.forEach((p, idx) =>
-    p.settlements.forEach(vId => ownerByVertex.set(vId, idx))
-  );
+  // ownerByVertex -> { owner, mult }  (settlement=1, city=2)
+  const vertexInfo = new Map();
+  state.players.forEach((p, idx) => {
+    p.settlements.forEach(vId => vertexInfo.set(vId, { owner: idx, mult: 1 }));
+    p.cities?.forEach(vId => vertexInfo.set(vId, { owner: idx, mult: 2 }));
+  });
 
   const gainByPlayer = [initRes(), initRes(), initRes(), initRes()];
 
@@ -21,15 +22,15 @@ export function distributeResources({ sum, state, layout, graph }) {
     const kind = layout[tileIdx].kind;
     graph.vertices.forEach(v => {
       if (!v.tiles.has(tileIdx)) return;
-      const owner = ownerByVertex.get(v.id);
-      if (owner != null) gainByPlayer[owner][kind] += 1; // settlement=1
+      const info = vertexInfo.get(v.id);
+      if (!info) return;
+      gainByPlayer[info.owner][kind] += info.mult;
     });
   });
 
-  // עדכון state מרוכז דרך patch (טריגר למנויים)
   patch(s => {
     s.players.forEach((p, idx) => {
-      RES_KEYS.forEach(k => { p.resources[k] += gainByPlayer[idx][k]; });
+      RES_KEYS.forEach(k => p.resources[k] += gainByPlayer[idx][k]);
     });
   });
 
@@ -39,7 +40,7 @@ export function distributeResources({ sum, state, layout, graph }) {
 export function summarizeGain(gainByPlayer){
   const parts = [];
   gainByPlayer.forEach((g, idx) => {
-    const arr = Object.entries(g).filter(([_,v]) => v>0).map(([k,v]) => `${v} ${k}`);
+    const arr = Object.entries(g).filter(([,v]) => v>0).map(([k,v]) => `${v} ${k}`);
     if (arr.length) parts.push(`P${idx+1}: ` + arr.join(", "));
   });
   return parts.length ? `Resources — ${parts.join(" | ")}` : "No one produced.";

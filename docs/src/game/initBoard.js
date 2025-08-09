@@ -17,6 +17,7 @@ export function buildBoard(app, root) {
     tileSprites.push(g);
     if (kind === "desert") {
       robberSpriteRef.sprite = drawRobber(boardC, g.center);
+      robberSpriteRef.sprite.zIndex = 9999;
       state.robberTile = i;
     } else {
       drawToken(boardC, g.center, token);

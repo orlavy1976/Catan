@@ -18,6 +18,9 @@ export function startSetupPhase({
   hud.setBottom(`Setup: Place Settlement`);
   hud.setRollEnabled(false);
   hud.setEndEnabled(false);
+  hud.setBuildRoadEnabled(false);
+  hud.setBuildSettlementEnabled(false);
+  hud.setBuildCityEnabled(false);
 
   // אוספים מקומיים להצבה
   const occupiedVertices = new Set();
