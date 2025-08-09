@@ -5,24 +5,36 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   const hud = new PIXI.Container();
   root.addChild(hud);
 
-  const pad = 20;
-  const gap = 10;
+  // layout constants
+  const pad = 20;         // padding מהקצוות
+  const gap = 10;         // רווח בין כפתורים
+  const gapLarge = 14;    // רווח גדול יותר בין קוביות לכפתורים
+  const colWidth = 200;   // רוחב הטור הימני (מרווח לכפתור הרחב ביותר)
 
   // ----- Buttons -----
-  const rollBtn = makeButton("Roll Dice", 140);
+  const rollBtn = makeButton("Roll Dice", 160);
   const buildSettlementBtn = makeButton("Build Settlement", 200);
-  const buildRoadBtn = makeButton("Build Road", 140);
-  const buildCityBtn = makeButton("Build City", 140);
-  const tradeBtn = makeButton("Trade", 120);
-  const endBtn = makeButton("End Turn", 140);
+  const buildRoadBtn = makeButton("Build Road", 160);
+  const buildCityBtn = makeButton("Build City", 160);
+  const tradeBtn = makeButton("Trade", 140);
+  const endBtn = makeButton("End Turn", 160);
 
-  [rollBtn, buildSettlementBtn, buildRoadBtn, buildCityBtn, tradeBtn, endBtn].forEach(b => hud.addChild(b.container));
+  // נשמור אותם בסדר מלמעלה למטה
+  const colButtons = [
+    rollBtn,
+    buildSettlementBtn,
+    buildRoadBtn,
+    buildCityBtn,
+    tradeBtn,
+    endBtn
+  ];
+  colButtons.forEach(b => hud.addChild(b.container));
 
-  // Dice
-  const dice = makeDiceView();
+  // ----- Dice -----
+  const dice = makeDiceView(); // container פנימי עם שני קוביות
   hud.addChild(dice.container);
 
-  // Texts
+  // ----- Texts (בצד שמאל כמו קודם) -----
   const bannerStyle = new PIXI.TextStyle({ fontFamily: "Georgia, serif", fontSize: 22, fill: 0xffffff, stroke: 0x000000, strokeThickness: 4 });
   const bannerText = new PIXI.Text("", bannerStyle);
   hud.addChild(bannerText);
@@ -35,23 +47,28 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   const resultText = new PIXI.Text("", resultStyle);
   hud.addChild(resultText);
 
-  // ----- Layout -----
+  // ----- Layout (ממקם את הטור הימני + הקוביות + טקסטים) -----
   function layout() {
-    // סדר מימין לשמאל: End | Trade | City | Road | Settlement | Roll
-    let x = app.renderer.width - pad;
+    // עוגן הטור הימני
+    const colX = app.renderer.width - pad - colWidth;
+    let cy = pad;
 
-    endBtn.container.x = x - endBtn.width; endBtn.container.y = pad; x = endBtn.container.x - gap;
-    tradeBtn.container.x = x - tradeBtn.width; tradeBtn.container.y = pad; x = tradeBtn.container.x - gap;
-    buildCityBtn.container.x = x - buildCityBtn.width; buildCityBtn.container.y = pad; x = buildCityBtn.container.x - gap;
-    buildRoadBtn.container.x = x - buildRoadBtn.width; buildRoadBtn.container.y = pad; x = buildRoadBtn.container.x - gap;
-    buildSettlementBtn.container.x = x - buildSettlementBtn.width; buildSettlementBtn.container.y = pad; x = buildSettlementBtn.container.x - gap;
-    rollBtn.container.x = x - rollBtn.width; rollBtn.container.y = pad;
+    // קוביות בראש הטור (מרוכזות אופקית בתוך colWidth)
+    const diceW = 150;      // רוחב משוער של אזור הקוביות (שתי קוביות + רווח)
+    dice.container.x = colX + Math.round((colWidth - diceW) / 2);
+    dice.container.y = cy;
+    cy += 120 + gapLarge;   // גובה בלוק הקוביות + רווח
 
-    // קוביות מעט משמאל ל-Roll
-    dice.container.x = rollBtn.container.x - 160;
-    dice.container.y = pad;
+    // כפתורים – טור אנכי
+    colButtons.forEach(btn => {
+      // מרכזים כל כפתור במסגרת colWidth
+      const x = colX + Math.round((colWidth - btn.width) / 2);
+      btn.container.x = x;
+      btn.container.y = cy;
+      cy += btn.height + gap;
+    });
 
-    // טקסטים משמאל
+    // טקסטים משמאל למעלה
     bannerText.x = pad; bannerText.y = pad;
     bottomText.x = pad; bottomText.y = bannerText.y + bannerText.height + 6;
     resultText.x = pad; resultText.y = bottomText.y + bottomText.height + 6;
@@ -60,7 +77,10 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   window.addEventListener("resize", layout);
 
   // ----- Wiring -----
-  rollBtn.onClick(() => onRoll?.());
+  rollBtn.onClick(async () => {          // ← הוספנו אנימציה לפני הגלגול
+    await dice.shake(600);
+    onRoll?.();
+  });
   endBtn.onClick(() => onEndTurn?.());
   buildRoadBtn.onClick(() => onBuildRoad?.());
   buildSettlementBtn.onClick(() => onBuildSettlement?.());

@@ -3,7 +3,7 @@ export function makeDiceView() {
 
   function drawDie(val, x) {
     const c = new PIXI.Container();
-    c.x = x; c.y = 70;
+    c.x = x; c.y = 70; // מיקום פנימי של כל קובייה בתוך ה-container של הקוביות
 
     const g = new PIXI.Graphics();
     g.beginFill(0xf1f1f1);
