@@ -18,7 +18,11 @@ import { startBuildCity } from "./game/buildCity.js";
 import { startTradeMenu } from "./game/trade.js";
 import { rollDice } from "./catan/rules.js";
 import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
-import { initDevDeck, startBuyDevCard } from "./game/devcards.js";
+import { initDevDeck, startBuyDevCard, startPlayDev } from "./game/devcards.js";
+
+// ⬅️ חדש:
+import { computeScores } from "./game/score.js";
+import { createScorePanel } from "./catan/scorePanel.js";
 
 const { app } = initApp();
 
@@ -74,11 +78,15 @@ const hud = createHUD(
   () => {
     if (state.phase !== "play" || !state._hasRolled) return;
     startBuyDevCard({ app, hud, state, resPanel });
+    refreshHudAvailability();
+    refreshScores(); // ⬅️ קנייה של VP עשויה להעלות ניקוד
   },
-  // onPlayDev (שלב ב' — נממש בהמשך)
+  // onPlayDev
   () => {
     if (state.phase !== "play" || !state._hasRolled) return;
-    hud.showResult("Playing Development Cards is coming next…");
+    startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder });
+    refreshHudAvailability();
+    refreshScores(); // ⬅️ Knight/Monopoly/Year/Road לא מוסיפים VP ישירות, אבל נשמור עקביות
   }
 );
 
@@ -86,10 +94,14 @@ const resPanel = createResourcePanel(app, state);
 subscribe((s) => {
   resPanel.updateResources(s.players);
   resPanel.setCurrent(s.currentPlayer - 1);
-  // כל שינוי ב-state → רענון זמינות כפתורים
   refreshHudAvailability();
+  refreshScores(); // ⬅️ כל שינוי מצב → עדכן ניקוד
 });
 resPanel.setCurrent(state.currentPlayer - 1);
+
+// ⬅️ פאנל ניקוד
+const scorePanel = createScorePanel(app, state);
+root.addChild(scorePanel.container);
 
 // ---------- Graph/Builder ----------
 const graph = buildGraph(axials, TILE_SIZE);
@@ -116,6 +128,7 @@ if (DEBUG_MODE) {
       hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
       hud.setBottom(`Ready: Roll Dice`);
       refreshHudAvailability();
+      refreshScores();
       resPanel.setCurrent(state.currentPlayer - 1);
     }
   });
@@ -136,12 +149,13 @@ function onRolled(evt) {
     state.phase = "discard";
     hud.showResult("Rolled 7 — Discard then move the robber");
     hud.setBottom("Players with >7 must discard half.");
-    refreshHudAvailability(); // ינטרל את הכפתורים בזמן discard
+    refreshHudAvailability();
+    refreshScores();
 
     enterDiscardPhase({ hud, state, resPanel }, () => {
       state.phase = "move-robber";
       hud.setBottom("Click a tile to move the robber");
-      refreshHudAvailability(); // עדיין מנוטרל, תכף נעבור ל-play
+      refreshHudAvailability();
 
       enterRobberMove({
         app, boardC, hud, state, tileSprites, robberSpriteRef, graph, layout, resPanel
@@ -149,6 +163,7 @@ function onRolled(evt) {
         state.phase = "play";
         hud.setBottom("You may build, trade, or end the turn");
         refreshHudAvailability();
+        refreshScores();
       });
     });
     return;
@@ -159,16 +174,22 @@ function onRolled(evt) {
   if (msg) hud.showResult(msg);
 
   refreshHudAvailability();
+  refreshScores();
 }
 
 function endTurn() {
   if (state.phase !== "play") return;
+  // נקה devNew לשחקן שעוזב (מ devcards.js)
+  const prev = state.players[state.currentPlayer - 1];
+  if (prev?.devNew) for (const k in prev.devNew) prev.devNew[k] = 0;
+
   makeEndTurn(state)();
   state._hasRolled = false;
   hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
   hud.setBottom(`Ready: Roll Dice`);
   resPanel.setCurrent(state.currentPlayer - 1);
   refreshHudAvailability();
+  refreshScores();
 }
 
 // stage safety
@@ -179,7 +200,6 @@ app.stage.hitArea = app.screen;
 // ===== AVAILABILITY  ======
 // ==========================
 function refreshHudAvailability() {
-  // ברירת מחדל: הכל כבוי
   hud.setRollEnabled(false);
   hud.setEndEnabled(false);
   hud.setBuildRoadEnabled(false);
@@ -189,89 +209,61 @@ function refreshHudAvailability() {
   hud.setBuyDevEnabled(false);
   hud.setPlayDevEnabled(false);
 
-  // לא בשלב play? כלום לא זמין
   if (state.phase !== "play") return;
 
   const me = state.players[state.currentPlayer - 1];
   const hasRolled = !!state._hasRolled;
 
-  // Roll: בתחילת התור בלבד
   hud.setRollEnabled(!hasRolled);
-
-  // End Turn: רק אחרי גלגול
   hud.setEndEnabled(hasRolled);
 
-  // Build Road: אחרי גלגול + יש עלות + קיימת אופציה כלשהי (רשת מחוברת)
-  if (hasRolled && canPay(me.resources, BUILD_COSTS.road) && hasAnyLegalRoadPlacement()) {
-    hud.setBuildRoadEnabled(true);
-  }
-
-  // Build Settlement: אחרי גלגול + יש עלות
-  if (hasRolled && canPay(me.resources, BUILD_COSTS.settlement)) {
-    hud.setBuildSettlementEnabled(true);
-  }
-
-  // Build City: אחרי גלגול + יש עלות + יש לפחות יישוב לשדרג
-  if (hasRolled && canPay(me.resources, BUILD_COSTS.city) && (me.settlements?.length > 0)) {
-    hud.setBuildCityEnabled(true);
-  }
-
-  // Trade (Bank/Players): הגיוני רק אחרי גלגול
-  if (hasRolled) {
-    hud.setTradeEnabled(true);
-  }
-
-  // Buy Dev: אחרי גלגול + יש עלות + יש קלפים בחפיסה
-  if (hasRolled && canPay(me.resources, { ore:1, wheat:1, sheep:1 }) && (state.devDeck?.length > 0)) {
-    hud.setBuyDevEnabled(true);
-  }
-
-  // Play Dev: אחרי גלגול + יש קלף פיתוח לא VP
-  if (hasRolled && hasPlayableDev(me)) {
-    hud.setPlayDevEnabled(true);
-  }
+  if (hasRolled && canPay(me.resources, BUILD_COSTS.road) && hasAnyLegalRoadPlacement()) hud.setBuildRoadEnabled(true);
+  if (hasRolled && canPay(me.resources, BUILD_COSTS.settlement)) hud.setBuildSettlementEnabled(true);
+  if (hasRolled && canPay(me.resources, BUILD_COSTS.city) && (me.settlements?.length > 0)) hud.setBuildCityEnabled(true);
+  if (hasRolled) hud.setTradeEnabled(true);
+  if (hasRolled && canPay(me.resources, { ore:1, wheat:1, sheep:1 }) && (state.devDeck?.length > 0)) hud.setBuyDevEnabled(true);
+  if (hasRolled && hasPlayableDev(me)) hud.setPlayDevEnabled(true);
 }
 
-function canPay(res, cost) {
-  for (const k in cost) if ((res[k] || 0) < cost[k]) return false;
-  return true;
-}
+function canPay(res, cost){ for (const k in cost) if ((res[k]||0)<cost[k]) return false; return true; }
 
-// בדיקת היתכנות בניית כביש: יש לפחות קצה אחד פנוי ונוגע ברשת שלך
 function hasAnyLegalRoadPlacement() {
   const occupiedEdges = new Set();
   state.players.forEach(p => p.roads?.forEach(eId => occupiedEdges.add(eId)));
 
   const networkVertices = new Set();
   const me = state.players[state.currentPlayer - 1];
-
-  // צמתים מהרכוש שלי
   (me.settlements || []).forEach(vId => networkVertices.add(vId));
-  // קצוות כביש שלי → צירוף הצמתים שלהם
-  (me.roads || []).forEach(eId => {
-    const e = graph.edges[eId];
-    if (!e) return;
-    networkVertices.add(e.a);
-    networkVertices.add(e.b);
-  });
+  (me.roads || []).forEach(eId => { const e = graph.edges[eId]; if (!e) return; networkVertices.add(e.a); networkVertices.add(e.b); });
 
-  // אם אין לי בכלל רשת, אין לאן לחבר
   if (networkVertices.size === 0) return false;
 
-  // יש לפחות קצה אחד פנוי שנוגע ברשת?
   for (let eId = 0; eId < graph.edges.length; eId++) {
     if (occupiedEdges.has(eId)) continue;
-    const e = graph.edges[eId];
-    if (!e) continue;
+    const e = graph.edges[eId]; if (!e) continue;
     if (networkVertices.has(e.a) || networkVertices.has(e.b)) return true;
   }
   return false;
 }
 
+// יש קלף פיתוח שניתן לשחק (לא כולל VP, ולא קלף שנקנה בתור הזה)
 function hasPlayableDev(player) {
   const d = player.dev || {};
-  const totalNonVP = (d.knight||0) + (d.year_of_plenty||0) + (d.monopoly||0) + (d.road_building||0);
-  return totalNonVP > 0;
+  const n = player.devNew || {};
+  const playable =
+    Math.max(0,(d.knight||0)-(n.knight||0)) +
+    Math.max(0,(d.road_building||0)-(n.road_building||0)) +
+    Math.max(0,(d.year_of_plenty||0)-(n.year_of_plenty||0)) +
+    Math.max(0,(d.monopoly||0)-(n.monopoly||0));
+  return playable > 0;
+}
+
+// ==========================
+// ===== SCORE REFRESH  =====
+// ==========================
+function refreshScores() {
+  const { scores } = computeScores(state);
+  scorePanel.setScores(scores);
 }
 
 // ==========================
@@ -285,6 +277,8 @@ function debugInit() {
       p.cities = p.cities || [];
       p.roads = p.roads || [];
       p.dev = p.dev || { knight:0, vp:0, year_of_plenty:0, monopoly:0, road_building:0 };
+      p.devNew = p.devNew || { knight:0, vp:0, year_of_plenty:0, monopoly:0, road_building:0 };
+      p.knightsPlayed = p.knightsPlayed || 0;
     });
   });
 
@@ -332,6 +326,7 @@ function debugInit() {
   hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
   hud.setBottom(`Ready: Roll Dice`);
   refreshHudAvailability();
+  refreshScores();
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 

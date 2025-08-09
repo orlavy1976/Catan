@@ -1,20 +1,24 @@
 import { BUILD_COSTS, PLAYER_COLORS } from "../config/constants.js";
 import { patch } from "./stateStore.js";
-import { updateLongestRoad } from "./longestRoad.js";
 
 /**
- * מצב "בניית כביש": מציג קצוות חוקיים, גובה עלות, ומציב.
+ * מצב "בניית כביש": מציג קצוות חוקיים, גובה עלות (אלא אם free), ומציב.
  * context: { app, boardC, hud, state, graph, builder }
+ * opts: { free?:boolean, onPlaced?:()=>void, onCancel?:()=>void }
  */
-export function startBuildRoad(context) {
+export function startBuildRoad(context, opts = {}) {
   const { boardC, hud, state, graph, builder } = context;
+  const { free = false, onPlaced, onCancel } = opts;
 
-  // ✅ בדיקת עלות מול player.resources
   const player = currentPlayer(state);
-  const canPay = hasResources(player.resources, BUILD_COSTS.road);
-  if (!canPay) {
-    hud.showResult("Not enough resources (need 1 brick + 1 wood)");
-    return cleanup();
+
+  // בדיקת עלות (אם לא free)
+  if (!free) {
+    const canPay = hasResources(player.resources, BUILD_COSTS.road);
+    if (!canPay) {
+      hud.showResult("Not enough resources (need 1 brick + 1 wood)");
+      return cleanup();
+    }
   }
 
   // אוסף תפוסים מכל השחקנים
@@ -29,7 +33,7 @@ export function startBuildRoad(context) {
   }
 
   builder.clearGhosts();
-  const color = PLAYER_COLORS[player.colorIdx]; // ✅ צבע אמיתי (hex)
+  const color = PLAYER_COLORS[player.colorIdx];
   legalEdges.forEach(eId => builder.drawRoadGhost(eId, color, 0.35));
 
   // היטים עבים לבחירה
@@ -46,22 +50,17 @@ export function startBuildRoad(context) {
       // גבה עלות + עדכן state
       patch(s => {
         const p = s.players[s.currentPlayer - 1];
-        pay(p.resources, BUILD_COSTS.road);
+        if (!free) pay(p.resources, BUILD_COSTS.road);
         p.roads.push(eId);
       });
 
       // ציור בפועל
       builder.placeRoad(eId, player.colorIdx);
 
-      // חישוב Longest Road לאחר הצבה
-      const lr = updateLongestRoad(state, graph);
-      if (lr.changed && lr.owner != null) {
-        hud.showResult(`Built a road — Longest Road: P${lr.owner + 1} (${lr.length})`);
-      } else {
-        hud.showResult("Built a road");
-      }
+      hud.showResult(free ? "Built a road (free)" : "Built a road");
 
       finish();
+      onPlaced?.();
     });
     interactive.addChild(hit);
   });
@@ -76,6 +75,7 @@ export function startBuildRoad(context) {
   }
   function cleanup() {
     builder.clearGhosts();
+    onCancel?.();
   }
 }
 
