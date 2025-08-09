@@ -7,7 +7,7 @@ export function createHUD(app, root, onRolled) {
   app.stage.addChild(hud);
   app.stage.sortableChildren = true;
 
-  // רקע עליון לבאנר
+  // --- באנר עליון ---
   const banner = new PIXI.Container();
   const bannerBg = new PIXI.Graphics();
   bannerBg.beginFill(0x000000, 0.25);
@@ -29,7 +29,7 @@ export function createHUD(app, root, onRolled) {
 
   hud.addChild(banner);
 
-  // כפתור הטלת קוביות
+  // --- כפתור הטלת קוביות ---
   const rollBtn = new PIXI.Container();
   const btnBg = new PIXI.Graphics();
   btnBg.beginFill(0xffffff, 0.15);
@@ -55,7 +55,7 @@ export function createHUD(app, root, onRolled) {
 
   hud.addChild(rollBtn);
 
-  // תצוגת קוביות
+  // --- תצוגת קוביות ---
   const diceC = new PIXI.Container();
   hud.addChild(diceC);
 
@@ -91,7 +91,28 @@ export function createHUD(app, root, onRolled) {
     return c;
   }
 
-  // פריסה ומיקום HUD בהתאם לגודל המסך
+  // --- פס תחתון למצב פעולה ---
+  const bottom = new PIXI.Container();
+  const bbg = new PIXI.Graphics();
+  bbg.beginFill(0x000000, 0.22);
+  bbg.drawRoundedRect(0, 0, 420, 44, 12);
+  bbg.endFill();
+  bottom.addChild(bbg);
+
+  const bottomText = new PIXI.Text("Setup: Place Settlement", {
+    fontFamily: "Georgia, serif",
+    fontSize: 18,
+    fill: 0xffffff,
+    stroke: 0x000000,
+    strokeThickness: 3,
+  });
+  bottomText.anchor.set(0, 0.5);
+  bottomText.x = 16; bottomText.y = 22;
+  bottom.addChild(bottomText);
+
+  hud.addChild(bottom);
+
+  // --- פריסה ---
   function layout() {
     const pad = 16;
     banner.x = pad;
@@ -102,6 +123,9 @@ export function createHUD(app, root, onRolled) {
 
     diceC.x = rollBtn.x - 160; // לצד הכפתור
     diceC.y = pad;
+
+    bottom.x = pad;
+    bottom.y = app.renderer.height - 44 - pad;
   }
 
   window.addEventListener("resize", layout);
@@ -110,7 +134,7 @@ export function createHUD(app, root, onRolled) {
   let animTicker = null;
 
   async function handleRoll() {
-    // אנימציה קצרה של "רנדומיזציה"
+    // אנימציה קצרה של "ניעור" הקוביות
     const start = performance.now();
     const tempDice = [drawDie(1, 40), drawDie(1, 110)];
     diceC.removeChildren();
@@ -123,12 +147,11 @@ export function createHUD(app, root, onRolled) {
       const v2 = 1 + ((Math.random()*6)|0);
       diceC.removeChildren();
       diceC.addChild(drawDie(v1, 40), drawDie(v2, 110));
-      // רטט קטן
       diceC.scale.set(1 + Math.sin(t*20)*0.02);
     });
     animTicker.start();
 
-    await wait(600); // משך "ניעור" קצר
+    await wait(600); // משך "ניעור"
 
     const { d1, d2, sum } = rollDice();
     animTicker.stop();
@@ -143,8 +166,8 @@ export function createHUD(app, root, onRolled) {
 
   return {
     setBanner(text) { bannerText.text = text; },
+    setBottom(text) { bottomText.text = text; },
     showResult(text) {
-      // הודעת תוצאה קטנה מתחת לבאנר
       const msg = new PIXI.Text(text, {
         fontFamily: "Georgia, serif",
         fontSize: 18,
@@ -154,7 +177,6 @@ export function createHUD(app, root, onRolled) {
       });
       msg.x = 18; msg.y = 62;
       hud.addChild(msg);
-      // דהייה החוצה
       app.ticker.add(function fade(delta) {
         msg.alpha -= 0.02 * delta;
         if (msg.alpha <= 0) {
@@ -167,4 +189,6 @@ export function createHUD(app, root, onRolled) {
   };
 }
 
-function wait(ms) { return new Promise(res => setTimeout(res, ms)); }
+function wait(ms) { 
+  return new Promise(res => setTimeout(res, ms)); 
+}
