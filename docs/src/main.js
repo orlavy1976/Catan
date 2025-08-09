@@ -10,7 +10,7 @@ const { app } = initApp();
 // --- Build the initial visual board ---
 const TILE_SIZE = 80;                  // desktop-friendly
 const layout = generateBoard();        // [{kind, token}, ...]
-const { boardC, axials, placeTile } = drawBoard(root, { size: TILE_SIZE });
+const { boardC, axials, placeTile } = drawBoard(root, app, { size: TILE_SIZE });
 
 // place tiles
 const tileSprites = [];

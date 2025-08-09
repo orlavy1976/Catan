@@ -2,14 +2,8 @@ import { axialToPixel, hexPolygonPoints, standardAxials } from "../utils/geom.js
 import { colorFor } from "./board.js";
 import { createTextures } from "../core/assets.js";
 
-export function drawBoard(root, options = {}) {
+export function drawBoard(root, app, options = {}) {
   const { size = 64 } = options;
-
-  // We'll need app to render textures; grab from global PIXI Application
-  // Easiest path: PIXI.Application.shared doesn't exist in v7, so read from root.parent
-  const app = root.parent?.parent?.app ?? PIXI.utils?.app; // fallback if you injected
-  // If not available, we can find via the renderer on stage
-  const renderer = root.parent?.renderer || (root.parent && root.parent.renderer) || null;
   const textures = createTextures(app ?? PIXI.Application.shared ?? PIXI.app ?? { renderer: PIXI.autoDetectRenderer?.() });
 
   const boardC = new PIXI.Container();
