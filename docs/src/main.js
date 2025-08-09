@@ -18,12 +18,16 @@ import { startBuildCity } from "./game/buildCity.js";
 import { startTradeMenu } from "./game/trade.js";
 import { rollDice } from "./catan/rules.js";
 import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
+
+// Dev cards (מודולריים)
 import { initDevDeck, startBuyDevCard, startPlayDev } from "./game/devcards/index.js";
 
-
-// ⬅️ חדש:
+// ניקוד + פאנל
 import { computeScores } from "./game/score.js";
 import { createScorePanel } from "./catan/scorePanel.js";
+
+// ✅ חדש: בדיקת ניצחון
+import { maybeHandleVictory } from "./game/victory.js";
 
 const { app } = initApp();
 
@@ -80,14 +84,14 @@ const hud = createHUD(
     if (state.phase !== "play" || !state._hasRolled) return;
     startBuyDevCard({ app, hud, state, resPanel });
     refreshHudAvailability();
-    refreshScores(); // ⬅️ קנייה של VP עשויה להעלות ניקוד
+    refreshScores(); // ייתכן שקלף VP יעלה ל-10
   },
   // onPlayDev
   () => {
     if (state.phase !== "play" || !state._hasRolled) return;
     startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder });
     refreshHudAvailability();
-    refreshScores(); // ⬅️ Knight/Monopoly/Year/Road לא מוסיפים VP ישירות, אבל נשמור עקביות
+    refreshScores();
   }
 );
 
@@ -96,7 +100,7 @@ subscribe((s) => {
   resPanel.updateResources(s.players);
   resPanel.setCurrent(s.currentPlayer - 1);
   refreshHudAvailability();
-  refreshScores(); // ⬅️ כל שינוי מצב → עדכן ניקוד
+  refreshScores();
 });
 resPanel.setCurrent(state.currentPlayer - 1);
 
@@ -180,7 +184,6 @@ function onRolled(evt) {
 
 function endTurn() {
   if (state.phase !== "play") return;
-  // נקה devNew לשחקן שעוזב (מ devcards.js)
   const prev = state.players[state.currentPlayer - 1];
   if (prev?.devNew) for (const k in prev.devNew) prev.devNew[k] = 0;
 
@@ -247,7 +250,6 @@ function hasAnyLegalRoadPlacement() {
   return false;
 }
 
-// יש קלף פיתוח שניתן לשחק (לא כולל VP, ולא קלף שנקנה בתור הזה)
 function hasPlayableDev(player) {
   const d = player.dev || {};
   const n = player.devNew || {};
@@ -265,6 +267,8 @@ function hasPlayableDev(player) {
 function refreshScores() {
   const { scores } = computeScores(state);
   scorePanel.setScores(scores);
+  // ✅ בדוק ניצחון אחרי כל עדכון ניקוד
+  maybeHandleVictory({ app, hud, state }, scores);
 }
 
 // ==========================
