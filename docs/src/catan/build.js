@@ -26,11 +26,19 @@ export function makeBuilder(app, boardC, graph, state) {
     const v = vertices[vId];
     const g = new PIXI.Graphics();
     g.beginFill(color, alpha);
-    g.drawPolygon(-10, -12, 10, -12, 10, 10, -10, 10);
+
+    // בית ממורכז סביב (0,0) – בלי הזזה אנכית
+    g.drawPolygon(
+      -12, -14,   0, -24,   12, -14,   12, 8,   -12, 8
+    );
     g.endFill();
     g.lineStyle({ width: 2, color: 0x000000, alpha: 0.2 });
-    g.drawPolygon(-10, -12, 10, -12, 10, 10, -10, 10);
-    g.x = v.x; g.y = v.y - 10;
+    g.drawPolygon(
+      -12, -14,   0, -24,   12, -14,   12, 8,   -12, 8
+    );
+
+    g.x = v.x; 
+    g.y = v.y; // <<< היה -10/-12 – להסיר את ההזזה
     ghosts.addChild(g);
   }
 
@@ -49,11 +57,17 @@ export function makeBuilder(app, boardC, graph, state) {
     const color = PLAYER_COLORS[playerIdx];
     const g = new PIXI.Graphics();
     g.beginFill(color);
-    g.drawPolygon(-12, -16, 12, -16, 12, 10, -12, 10);
+    g.drawPolygon(
+      -12, -14,   0, -24,   12, -14,   12, 8,   -12, 8
+    );
     g.endFill();
     g.lineStyle({ width: 2, color: 0x000000, alpha: 0.35 });
-    g.drawPolygon(-12, -16, 12, -16, 12, 10, -12, 10);
-    g.x = v.x; g.y = v.y - 12;
+    g.drawPolygon(
+      -12, -14,   0, -24,   12, -14,   12, 8,   -12, 8
+    );
+
+    g.x = v.x; 
+    g.y = v.y; // <<< בלי offset
     townsLayer.addChild(g);
     townSprites.set(vId, g);
   }

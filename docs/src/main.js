@@ -166,21 +166,37 @@ function drawRoadChoices(){
     const a = graph.vertices[e.a], b = graph.vertices[e.b];
 
     const hit = new PIXI.Graphics();
-    hit.lineStyle({ width: 16, color: 0x000000, alpha: 0.001, cap: 'round' });
-    hit.moveTo(a.x, a.y); hit.lineTo(b.x, b.y);
+    // נצור hitArea כמלבן עבה סביב המקטע
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    const nx = -dy / len, ny = dx / len; // נורמל
+    const half = 10; // חצי-רוחב הייט
+
+    const p1 = [a.x + nx*half, a.y + ny*half];
+    const p2 = [b.x + nx*half, b.y + ny*half];
+    const p3 = [b.x - nx*half, b.y - ny*half];
+    const p4 = [a.x - nx*half, a.y - ny*half];
+
+    const poly = new PIXI.Polygon([...p1, ...p2, ...p3, ...p4]);
+    hit.hitArea = poly;
+
+    // מציירים שקוף-כמעט כדי שאפשר יהיה לדבג אם תרצה (להשאיר 0.001)
+    hit.beginFill(0x000000, 0.001);
+    hit.drawPolygon(poly.points);
+    hit.endFill();
+
     hit.eventMode = 'static';
     hit.cursor = 'pointer';
     hit.on('pointertap', () => {
-      // place road
       builder.placeRoad(eId, currentPlayer().colorIdx);
       currentPlayer().roads.push(eId);
       occupiedEdges.add(eId);
-
-      // advance to next player in setup snake order
       nextPlayerSetup();
     });
+
     interactiveLayer.addChild(hit);
   });
+
 }
 
 // Start setup
