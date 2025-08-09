@@ -1,45 +1,76 @@
 // docs/src/game/score.js
 
-/** מחשב ניקוד לכל שחקן + מחזיקי הבונוסים. */
+/** מחשב ניקוד לכל שחקן + מחזיקי הבונוסים (LR/LA). */
 export function computeScores(state) {
   const n = state.players.length;
-  const lrOwner = getLongestRoadOwner(state);    // 0-based או null
-  const laOwner = getLargestArmyOwner(state);    // 0-based או null
+  const lr = resolveLongestRoad(state);   // { ownerIdx|null, length|null }
+  const la = resolveLargestArmy(state);   // { ownerIdx|null, knights:null|number }
 
   const scores = [];
   for (let i = 0; i < n; i++) {
     const p = state.players[i] || {};
-    const settlements = (p.settlements?.length || 0);
-    const cities = (p.cities?.length || 0);
-    const devVP = (p.dev?.vp || 0);
+    const settlements = p.settlements?.length || 0;
+    const cities = p.cities?.length || 0;
+    const devVP = p.dev?.vp || 0;
+
     let total = settlements * 1 + cities * 2 + devVP;
-    if (lrOwner === i) total += 2;
-    if (laOwner === i) total += 2;
+    const hasLR = lr.ownerIdx === i;
+    const hasLA = la.ownerIdx === i;
+    if (hasLR) total += 2;
+    if (hasLA) total += 2;
 
     scores.push({
       playerIdx: i,
       settlements,
       cities,
       devVP,
-      hasLongestRoad: lrOwner === i,
-      hasLargestArmy: laOwner === i,
+      hasLongestRoad: hasLR,
+      hasLargestArmy: hasLA,
       total,
     });
   }
-  return { scores, lrOwner, laOwner };
+  return { scores, lrOwner: lr.ownerIdx, laOwner: la.ownerIdx };
 }
 
-/** נסיון גמיש לקרוא בעל ה-Longest Road מה־state (כבר קיים אצלך). */
-export function getLongestRoadOwner(state) {
-  // בודק כמה שדות אפשריים בצורה סלחנית:
-  const cand = state.longestRoad?.ownerIdx ?? state.longestRoad?.playerIdx ??
-               state.longestRoadOwner ?? state.longestRoadHolder ??
-               state.longestRoad?.owner;
-  return (Number.isInteger(cand) && cand >= 0) ? cand : null;
+/* ---------------- Longest Road ----------------
+   מנסה לקרוא מבני state שונים בצורה גמישה, ואם יש גם אורך — בודק סף 5.
+*/
+function resolveLongestRoad(state) {
+  // בעלי תפקיד פוטנציאליים
+  const ownerCand =
+    state.longestRoad?.ownerIdx ??
+    state.longestRoad?.playerIdx ??
+    state.longestRoadOwner ??
+    state.longestRoadHolder ??
+    state.longestRoad?.owner;
+
+  // אורך אם זמין
+  const lenCand =
+    state.longestRoad?.length ??
+    state.longestRoad?.len ??
+    state.longestRoadLen ??
+    null;
+
+  // אם אין בעל תפקיד חוקי — אין בונוס
+  if (!Number.isInteger(ownerCand) || ownerCand < 0) {
+    return { ownerIdx: null, length: lenCand ?? null };
+  }
+
+  // אם יש אורך זמין — דרוש סף 5 לפי החוקים
+  if (Number.isInteger(lenCand)) {
+    if (lenCand >= 5) return { ownerIdx: ownerCand, length: lenCand };
+    // אורך קטן מ-5 ⇒ אין בונוס עדיין
+    return { ownerIdx: null, length: lenCand };
+  }
+
+  // אין מידע על האורך ⇒ נניח שהלוגיקה החיצונית כבר אוכפת את הסף
+  return { ownerIdx: ownerCand, length: null };
 }
 
-/** Largest Army מחושב דינמית לפי knightsPlayed (מינימום 3 ויתרון מובהק). */
-export function getLargestArmyOwner(state) {
+/* ---------------- Largest Army ----------------
+   חישוב דינמי: מי ששיחק הכי הרבה Knights, מינימום 3 וללא תיקו.
+*/
+function resolveLargestArmy(state) {
   const ks = state.players.map(p => p?.knightsPlayed || 0);
   let bestIdx = null, bestVal = -1, tie = false;
   for (let i = 0; i < ks.length; i++) {
@@ -47,6 +78,6 @@ export function getLargestArmyOwner(state) {
     if (v > bestVal) { bestVal = v; bestIdx = i; tie = false; }
     else if (v === bestVal) { tie = true; }
   }
-  if (bestVal >= 3 && !tie) return bestIdx;
-  return null;
+  if (bestVal >= 3 && !tie) return { ownerIdx: bestIdx, knights: bestVal };
+  return { ownerIdx: null, knights: bestVal };
 }

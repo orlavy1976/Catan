@@ -8,6 +8,8 @@ const DECK_DEF = [
   ...Array(2).fill("road_building"),
 ];
 
+import { patch } from "./stateStore.js";
+
 export function initDevDeck(state, rng = Math) {
   if (!state.devDeck || !Array.isArray(state.devDeck) || state.devDeck.length === 0) {
     const deck = [...DECK_DEF];
@@ -22,7 +24,7 @@ export function initDevDeck(state, rng = Math) {
   state.players.forEach(p => {
     p.dev ??= { knight:0, vp:0, year_of_plenty:0, monopoly:0, road_building:0 };
     p.devNew ??= { knight:0, vp:0, year_of_plenty:0, monopoly:0, road_building:0 };
-    p.knightsPlayed ??= 0; // לשימוש עתידי ל-Largest Army
+    p.knightsPlayed ??= 0; // לשימוש ל-Largest Army
   });
 }
 
@@ -41,6 +43,8 @@ export function startBuyDevCard({ app, hud, state, resPanel }) {
 
   pay(me.resources, COST);
   const card = state.devDeck.pop();
+
+  // עדכון יד
   me.dev[card] = (me.dev[card] || 0) + 1;
   me.devNew[card] = (me.devNew[card] || 0) + 1; // מסמן “נקנה בתור הזה”
 
@@ -78,7 +82,6 @@ export function startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, r
     ["road_building","Road Building"],
     ["year_of_plenty","Year of Plenty"],
     ["monopoly","Monopoly"],
-    // VP לא מופיע
   ];
   let picked = null;
 
@@ -104,9 +107,8 @@ export function startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, r
 
   const useBtn = makeBigButton("Play", () => {
     if (!picked) return;
-    // צורכים את הקלף (מיד כשבחרת)
+    // צריכה מיידית של הקלף
     me.dev[picked]--;
-    // הערה: me.devNew כבר מובטח שלא יאפשר שימוש אם נקנה בתור הזה
     close();
 
     switch (picked) {
@@ -159,10 +161,28 @@ export function startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, r
 
 /* ====== Card effects ====== */
 
-// Knight: הזזת השודד + גניבה מאחד השכנים (ממחזר לוגיקת השודד הקיימת)
+// Knight: הזזת השודד + גניבה + עדכון Largest Army
 function playKnight({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout }) {
+  const { enterRobberMove } = require("../game/robber.js"); // הימנעות ממעגליות ייבוא
+
+  // 1) עדכן מונה אבירים + בעל Largest Army בתוך patch כדי לטריגר subscribe/ScorePanel
+  const meIdx = state.currentPlayer - 1;
+  patch(s => {
+    const me = s.players[meIdx];
+    me.knightsPlayed = (me.knightsPlayed || 0) + 1;
+    // חישוב Largest Army: מינ' 3 וללא תיקו
+    const ks = s.players.map(p => p?.knightsPlayed || 0);
+    let bestIdx = null, bestVal = -1, tie = false;
+    for (let i = 0; i < ks.length; i++) {
+      const v = ks[i];
+      if (v > bestVal) { bestVal = v; bestIdx = i; tie = false; }
+      else if (v === bestVal) { tie = true; }
+    }
+    s.largestArmyOwner = (bestVal >= 3 && !tie) ? bestIdx : null;
+  });
+
+  // 2) מעבר למצב הזזת שודד (כולל גניבה) – ממחזר את ה-flow של 7
   state.phase = "move-robber";
-  const { enterRobberMove } = require("../game/robber.js"); // טעינה דינמית כדי למנוע מעגליות
   hud.showResult("Knight played — move the robber and steal 1 resource.");
   hud.setBottom("Click a tile to move the robber");
   hud.setRollEnabled(false);
@@ -174,26 +194,28 @@ function playKnight({ app, hud, state, resPanel, boardC, tileSprites, robberSpri
   hud.setBuyDevEnabled(false);
   hud.setPlayDevEnabled(false);
 
-  // נסמן +1 Knight לצורך Largest Army בעתיד
-  const me = state.players[state.currentPlayer - 1];
-  me.knightsPlayed = (me.knightsPlayed || 0) + 1;
-
-  enterRobberMove({ app, boardC, hud, state, tileSprites, robberSpriteRef, graph, layout, resPanel }, () => {
-    state.phase = "play";
-    hud.setBottom("You may build, trade, or end the turn");
-    hud.setRollEnabled(false);
-    hud.setEndEnabled(true);
-    hud.setBuildRoadEnabled(true);
-    hud.setBuildSettlementEnabled(true);
-    hud.setBuildCityEnabled(true);
-    hud.setTradeEnabled(true);
-    hud.setBuyDevEnabled(true);
-    hud.setPlayDevEnabled(true);
-    hud.showResult("Robber moved.");
-  });
+  enterRobberMove(
+    { app, boardC, hud, state, tileSprites, robberSpriteRef, graph, layout, resPanel },
+    () => {
+      // 3) חזרה ל-play לאחר הזזה וגניבה
+      state.phase = "play";
+      hud.setBottom("You may build, trade, or end the turn");
+      hud.setRollEnabled(false);
+      hud.setEndEnabled(true);
+      hud.setBuildRoadEnabled(true);
+      hud.setBuildSettlementEnabled(true);
+      hud.setBuildCityEnabled(true);
+      hud.setTradeEnabled(true);
+      hud.setBuyDevEnabled(true);
+      hud.setPlayDevEnabled(true);
+      hud.showResult("Robber moved.");
+      // רענון לוח משאבים אם הגניבה שינתה ידיים
+      resPanel?.updateResources?.(state.players);
+    }
+  );
 }
 
-// Road Building: בניית 2 דרכים בחינם (back-to-back)
+// Road Building: placeholder – נשאר כמו לפני (שני כבישים בחינם)
 function playRoadBuilding({ app, hud, state, boardC, graph, builder }) {
   const { startBuildRoad } = require("./buildRoad.js");
   let remaining = 2;
@@ -231,7 +253,7 @@ function playRoadBuilding({ app, hud, state, boardC, graph, builder }) {
   placeNext();
 }
 
-// Year of Plenty: לבחור שני משאבים כלשהם ולקבלם מהבנק
+// Year of Plenty
 function playYearOfPlenty({ app, hud, state, resPanel }) {
   const RES = ["brick","wood","wheat","sheep","ore"];
   const overlay = new PIXI.Container(); overlay.zIndex = 10000;
@@ -248,7 +270,7 @@ function playYearOfPlenty({ app, hud, state, resPanel }) {
   title.x = 20; title.y = 14; panel.addChild(title);
 
   let picks = [];
-  const chips = RES.map((k,i) => {
+  RES.forEach((k,i) => {
     const c = makeChip(k, () => {
       if (picks.length >= 2) return;
       picks.push(k);
@@ -256,7 +278,6 @@ function playYearOfPlenty({ app, hud, state, resPanel }) {
     });
     c.container.x = 20 + i*90; c.container.y = 80;
     panel.addChild(c.container);
-    return c;
   });
 
   const confirm = makeBigButton("Confirm", () => {
@@ -278,7 +299,7 @@ function playYearOfPlenty({ app, hud, state, resPanel }) {
   app.stage.addChild(overlay);
 }
 
-// Monopoly: לבחור משאב — למשוך אותו מכל השחקנים האחרים
+// Monopoly
 function playMonopoly({ app, hud, state, resPanel }) {
   const RES = ["brick","wood","wheat","sheep","ore"];
   const overlay = new PIXI.Container(); overlay.zIndex = 10000;
@@ -295,11 +316,10 @@ function playMonopoly({ app, hud, state, resPanel }) {
   title.x = 20; title.y = 14; panel.addChild(title);
 
   let chosen = null;
-  const chips = RES.map((k,i) => {
+  RES.forEach((k,i) => {
     const c = makeChip(k, () => { chosen = k; hud.showResult(`Monopoly: ${k}`); });
     c.container.x = 20 + i*90; c.container.y = 80;
     panel.addChild(c.container);
-    return c;
   });
 
   const confirm = makeBigButton("Confirm", () => {
@@ -383,7 +403,6 @@ function playableDevCounts(player) {
     road_building: Math.max(0, (d.road_building||0) - (n.road_building||0)),
     year_of_plenty: Math.max(0, (d.year_of_plenty||0) - (n.year_of_plenty||0)),
     monopoly: Math.max(0, (d.monopoly||0) - (n.monopoly||0)),
-    // vp לא משחקים
   };
 }
 

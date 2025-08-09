@@ -18,7 +18,8 @@ import { startBuildCity } from "./game/buildCity.js";
 import { startTradeMenu } from "./game/trade.js";
 import { rollDice } from "./catan/rules.js";
 import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
-import { initDevDeck, startBuyDevCard, startPlayDev } from "./game/devcards.js";
+import { initDevDeck, startBuyDevCard, startPlayDev } from "./game/devcards/index.js";
+
 
 // ⬅️ חדש:
 import { computeScores } from "./game/score.js";
