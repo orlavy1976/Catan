@@ -1,15 +1,15 @@
 import { makeButton } from "./button.js";
 import { makeDiceView } from "./diceView.js";
 
-export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSettlement, onBuildCity, onTrade) {
+export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSettlement, onBuildCity, onTrade, onBuyDev, onPlayDev) {
   const hud = new PIXI.Container();
   root.addChild(hud);
 
   // layout constants
-  const pad = 20;         // padding מהקצוות
-  const gap = 10;         // רווח בין כפתורים
-  const gapLarge = 14;    // רווח גדול יותר בין קוביות לכפתורים
-  const colWidth = 200;   // רוחב הטור הימני (מרווח לכפתור הרחב ביותר)
+  const pad = 20;
+  const gap = 10;
+  const gapLarge = 14;
+  const colWidth = 200;
 
   // ----- Buttons -----
   const rollBtn = makeButton("Roll Dice", 160);
@@ -17,24 +17,27 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   const buildRoadBtn = makeButton("Build Road", 160);
   const buildCityBtn = makeButton("Build City", 160);
   const tradeBtn = makeButton("Trade", 140);
+  const buyDevBtn = makeButton("Buy Dev Card", 160);
+  const playDevBtn = makeButton("Play Dev", 140);
   const endBtn = makeButton("End Turn", 160);
 
-  // נשמור אותם בסדר מלמעלה למטה
   const colButtons = [
     rollBtn,
     buildSettlementBtn,
     buildRoadBtn,
     buildCityBtn,
     tradeBtn,
+    buyDevBtn,
+    playDevBtn,
     endBtn
   ];
   colButtons.forEach(b => hud.addChild(b.container));
 
   // ----- Dice -----
-  const dice = makeDiceView(); // container פנימי עם שני קוביות
+  const dice = makeDiceView();
   hud.addChild(dice.container);
 
-  // ----- Texts (בצד שמאל כמו קודם) -----
+  // ----- Texts -----
   const bannerStyle = new PIXI.TextStyle({ fontFamily: "Georgia, serif", fontSize: 22, fill: 0xffffff, stroke: 0x000000, strokeThickness: 4 });
   const bannerText = new PIXI.Text("", bannerStyle);
   hud.addChild(bannerText);
@@ -47,28 +50,23 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   const resultText = new PIXI.Text("", resultStyle);
   hud.addChild(resultText);
 
-  // ----- Layout (ממקם את הטור הימני + הקוביות + טקסטים) -----
+  // ----- Layout -----
   function layout() {
-    // עוגן הטור הימני
     const colX = app.renderer.width - pad - colWidth;
     let cy = pad;
 
-    // קוביות בראש הטור (מרוכזות אופקית בתוך colWidth)
-    const diceW = 150;      // רוחב משוער של אזור הקוביות (שתי קוביות + רווח)
+    const diceW = 150;
     dice.container.x = colX + Math.round((colWidth - diceW) / 2);
     dice.container.y = cy;
-    cy += 120 + gapLarge;   // גובה בלוק הקוביות + רווח
+    cy += 120 + gapLarge;
 
-    // כפתורים – טור אנכי
     colButtons.forEach(btn => {
-      // מרכזים כל כפתור במסגרת colWidth
       const x = colX + Math.round((colWidth - btn.width) / 2);
       btn.container.x = x;
       btn.container.y = cy;
       cy += btn.height + gap;
     });
 
-    // טקסטים משמאל למעלה
     bannerText.x = pad; bannerText.y = pad;
     bottomText.x = pad; bottomText.y = bannerText.y + bannerText.height + 6;
     resultText.x = pad; resultText.y = bottomText.y + bottomText.height + 6;
@@ -77,7 +75,7 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   window.addEventListener("resize", layout);
 
   // ----- Wiring -----
-  rollBtn.onClick(async () => {          // ← הוספנו אנימציה לפני הגלגול
+  rollBtn.onClick(async () => {
     await dice.shake(600);
     onRoll?.();
   });
@@ -86,6 +84,8 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   buildSettlementBtn.onClick(() => onBuildSettlement?.());
   buildCityBtn.onClick(() => onBuildCity?.());
   tradeBtn.onClick(() => onTrade?.());
+  buyDevBtn.onClick(() => onBuyDev?.());
+  playDevBtn.onClick(() => onPlayDev?.()); // בשלב הבא נממש
 
   // ----- API -----
   function setBanner(t){ bannerText.text = t; }
@@ -98,6 +98,8 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   function setBuildSettlementEnabled(en){ buildSettlementBtn.setEnabled(en); }
   function setBuildCityEnabled(en){ buildCityBtn.setEnabled(en); }
   function setTradeEnabled(en){ tradeBtn.setEnabled(en); }
+  function setBuyDevEnabled(en){ buyDevBtn.setEnabled(en); }
+  function setPlayDevEnabled(en){ playDevBtn.setEnabled(en); }
 
   return {
     container: hud,
@@ -106,6 +108,6 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
     setBanner, setBottom, showResult,
     setRollEnabled, setEndEnabled,
     setBuildRoadEnabled, setBuildSettlementEnabled, setBuildCityEnabled,
-    setTradeEnabled,
+    setTradeEnabled, setBuyDevEnabled, setPlayDevEnabled,
   };
 }
