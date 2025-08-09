@@ -1,23 +1,18 @@
 // ------- Config -------
-const HEX_R = 48;                   // hex radius in px
-const COLS = 5, ROWS = 5;           // board size (adjust to Catan layout later)
-const TILE_TYPES = ["field","pasture","forest","hill","mountain","desert","sea"];
-// quick colors; replace with textures when you add assets
-const COLORS = {
-  field:"#c8e16b", pasture:"#a6d67a", forest:"#3e7b3f",
-  hill:"#c4824a", mountain:"#8f8f8f", desert:"#e2cd8f", sea:"#4aa6d6"
-};
+const HEX_R = 58;                   // hex radius in px
+const TILE_TYPES = ["field","pasture","forest","hill","mountain","desert"];
 
 // ------- Pixi App -------
-const app = new PIXI.Application();
+const app = new PIXI.Application({ background: "#0e0f12", antialias: true });
 document.body.appendChild(app.view);
-resize(); addEventListener('resize', resize);
+addEventListener('resize', resize);
 
+// Root containers
 const stage = app.stage;
-stage.eventMode = 'static';
-stage.hitArea = app.screen;
+const board = new PIXI.Container();
+stage.addChild(board);
 
-// ------- Axial hex math -------
+// ------- Axial hex math (flat-topped) -------
 function axialToPixel(q,r){
   const x = HEX_R * (Math.sqrt(3)*q + Math.sqrt(3)/2*r);
   const y = HEX_R * (3/2*r);
@@ -31,107 +26,133 @@ function polygonPoints(cx,cy,r){
   }
   return pts;
 }
-function cubeRound(x,y,z){
-  let rx=Math.round(x), ry=Math.round(y), rz=Math.round(z);
-  const x_diff=Math.abs(rx-x), y_diff=Math.abs(ry-y), z_diff=Math.abs(rz-z);
-  if(x_diff>y_diff && x_diff>z_diff) rx = -ry-rz;
-  else if(y_diff>z_diff)            ry = -rx-rz;
-  else                              rz = -rx-ry;
-  return {x:rx,y:ry,z:rz};
-}
-function pixelToAxial(px,py){
-  const q = (Math.sqrt(3)/3*px - 1/3*py)/HEX_R;
-  const r = (2/3*py)/HEX_R;
-  const cube = cubeRound(q, -q-r, r);
-  return {q:cube.x, r:cube.z};
-}
 
-// ------- Board model -------
-let tiles = makeBoard();
-function makeBoard(){
-  // Simple diamond/rect grid; swap to exact Catan layout later
-  const list=[];
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      const q = c - Math.floor(r/2);
-      const type = TILE_TYPES[(r*COLS+c)%TILE_TYPES.length];
-      list.push({id:`${q},${r}`, q, r, type, number:null});
+// ------- Create Catan-shaped layout (3-4-5-4-3) -------
+/*
+ Axial coords: row r has N tiles, centered on q=0
+ r: -2 -1  0  1  2    N: 3,4,5,4,3
+ q ranges to keep shape centered
+*/
+function catanAxials(){
+  const rows = [
+    {r:-2, n:3},
+    {r:-1, n:4},
+    {r: 0, n:5},
+    {r: 1, n:4},
+    {r: 2, n:3},
+  ];
+  const list = [];
+  for(const {r,n} of rows){
+    const qStart = -Math.floor((n-1)/2);
+    for(let i=0;i<n;i++){
+      list.push({ q: qStart + i, r });
     }
   }
   return list;
 }
 
-// ------- Render tiles -------
-const board = new PIXI.Container();
-stage.addChild(board);
+// Simple color map (replace with textures later)
+const COLORS = {
+  field:"#c8e16b", pasture:"#a6d67a", forest:"#3e7b3f",
+  hill:"#c4824a", mountain:"#8f8f8f", desert:"#e2cd8f"
+};
+
+// ------- Model -------
+let tiles = catanAxials().map((ax,i)=>({
+  id:`${ax.q},${ax.r}`,
+  ...ax,
+  type: TILE_TYPES[i % TILE_TYPES.length], // placeholder assignment
+  number: null,
+}));
+
+// ------- Draw -------
 const gfxById = new Map();
 
 function drawBoard(){
   board.removeChildren();
   gfxById.clear();
-  const center = {x: app.screen.width/2, y: app.screen.height/2};
-  const bounds = getBoardBounds(tiles);
-  const offset = {x: center.x - (bounds.minX+bounds.maxX)/2, y: center.y - (bounds.minY+bounds.maxY)/2};
+
+  // center the board on screen
+  const positions = tiles.map(t => axialToPixel(t.q, t.r));
+  const minX = Math.min(...positions.map(p => p.x-HEX_R));
+  const maxX = Math.max(...positions.map(p => p.x+HEX_R));
+  const minY = Math.min(...positions.map(p => p.y-HEX_R));
+  const maxY = Math.max(...positions.map(p => p.y+HEX_R));
+  const boardCenter = { x: (minX+maxX)/2, y: (minY+maxY)/2 };
+
+  const screenCenter = { x: app.renderer.width/2, y: app.renderer.height/2 };
+  const offset = { x: screenCenter.x - boardCenter.x, y: screenCenter.y - boardCenter.y };
 
   for(const t of tiles){
     const {x,y} = axialToPixel(t.q, t.r);
     const g = new PIXI.Graphics();
-    g.cursor = 'pointer';
     g.eventMode = 'static';
+    g.cursor = 'pointer';
     g.position.set(x+offset.x, y+offset.y);
 
-    // fill
+    // tile fill
     g.beginFill(PIXI.Color.from(COLORS[t.type] || "#888"));
-    g.lineStyle(2, 0x000000, 0.35);
+    g.lineStyle(3, 0x000000, 0.45);
     g.drawPolygon(polygonPoints(0,0,HEX_R));
     g.endFill();
 
-    // label
-    const label = new PIXI.Text({text: t.type, style: {fill:"#111", fontSize: 12, fontFamily:"system-ui"}});
-    label.anchor.set(0.5); label.position.set(0, 0);
-    g.addChild(label);
-
-    // hover glow
-    g.on('pointerover', () => {
-      g.filters = [new PIXI.filters.GlowFilter({distance:8, outerStrength:2})];
+    // hover outline (no filters needed)
+    g.on('pointerover', ()=>{
+      g.lineStyle(5, 0xffffff, 0.8);
+      g.clear();
+      g.beginFill(PIXI.Color.from(COLORS[t.type] || "#888"));
+      g.drawPolygon(polygonPoints(0,0,HEX_R));
+      g.endFill();
       hint(`(${t.q},${t.r}) ${t.type}`);
     });
-    g.on('pointerout', () => { g.filters = null; hint(''); });
+    g.on('pointerout', ()=>{
+      g.clear();
+      g.beginFill(PIXI.Color.from(COLORS[t.type] || "#888"));
+      g.lineStyle(3, 0x000000, 0.45);
+      g.drawPolygon(polygonPoints(0,0,HEX_R));
+      g.endFill();
+      hint('');
+    });
 
-    // select
-    g.on('pointertap', () => {
-      // Example action: toggle to next terrain (placeholder for real rules)
-      const idx = TILE_TYPES.indexOf(t.type);
-      t.type = TILE_TYPES[(idx+1)%TILE_TYPES.length];
+    // click to rotate terrain (placeholder action)
+    g.on('pointertap', ()=>{
+      const i = TILE_TYPES.indexOf(t.type);
+      t.type = TILE_TYPES[(i+1)%TILE_TYPES.length];
       drawBoard();
     });
+
+    // label
+    const label = new PIXI.Text({
+      text: t.type,
+      style: { fill:"#111", fontSize: 14, fontFamily:"system-ui", fontWeight: "600" }
+    });
+    label.anchor.set(0.5);
+    g.addChild(label);
 
     board.addChild(g);
     gfxById.set(t.id, g);
   }
 }
-function getBoardBounds(list){
-  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  for(const t of list){
-    const p = axialToPixel(t.q,t.r);
-    minX = Math.min(minX, p.x-HEX_R); maxX=Math.max(maxX, p.x+HEX_R);
-    minY = Math.min(minY, p.y-HEX_R); maxY=Math.max(maxY, p.y+HEX_R);
-  }
-  return {minX,maxX,minY,maxY};
-}
 
-drawBoard();
-
-// ------- UI -------
-document.getElementById('shuffle').onclick = () => {
-  tiles = tiles.map(t => ({...t, type: TILE_TYPES[Math.floor(Math.random()*TILE_TYPES.length)]}));
-  drawBoard();
-};
-function hint(s){ document.getElementById('hint').textContent = s; }
-
-// ------- Resize -------
 function resize(){
-  const w = innerWidth, h = innerHeight;
-  app.renderer.resize(w, h);
-  if(board) drawBoard();
+  app.renderer.resize(innerWidth, innerHeight);
+  drawBoard();
 }
+
+// UI wire-up (existing buttons in your HTML)
+const shuffleBtn = document.getElementById('shuffle');
+if (shuffleBtn){
+  shuffleBtn.onclick = ()=>{
+    tiles = tiles.map(t => ({...t, type: TILE_TYPES[Math.floor(Math.random()*TILE_TYPES.length)]}));
+    drawBoard();
+  };
+}
+
+// hint text (optional)
+function hint(s){
+  const el = document.getElementById('hint');
+  if (el) el.textContent = s;
+}
+
+// boot
+resize();
