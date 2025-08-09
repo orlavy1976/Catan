@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catan-like Board (PixiJS)</title>
+  <style>
+    html,body{margin:0;height:100%;background:#0e0f12;color:#e7e7e7;font-family:system-ui}
+    #ui{position:fixed;left:12px;top:12px;background:#1c1f27cc;padding:8px 12px;border-radius:12px}
+    button{cursor:pointer}
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <button id="shuffle">Shuffle Tiles</button>
+    <span id="hint"></span>
+  </div>
+
+  <!-- PixiJS via CDN (plain JS) -->
+  <script src="https://unpkg.com/pixi.js@7/dist/pixi.min.js"></script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
