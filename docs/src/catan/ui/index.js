@@ -1,7 +1,7 @@
 import { makeButton } from "./button.js";
 import { makeDiceView } from "./diceView.js";
 
-export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSettlement, onBuildCity) {
+export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSettlement, onBuildCity, onTrade) {
   const hud = new PIXI.Container();
   root.addChild(hud);
 
@@ -13,22 +13,17 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   const buildSettlementBtn = makeButton("Build Settlement", 200);
   const buildRoadBtn = makeButton("Build Road", 140);
   const buildCityBtn = makeButton("Build City", 140);
+  const tradeBtn = makeButton("Trade", 120);
   const endBtn = makeButton("End Turn", 140);
 
-  const buttons = new PIXI.Container();
-  buttons.addChild(rollBtn.container);
-  buttons.addChild(buildSettlementBtn.container);
-  buttons.addChild(buildRoadBtn.container);
-  buttons.addChild(buildCityBtn.container);
-  buttons.addChild(endBtn.container);
-  hud.addChild(buttons);
+  [rollBtn, buildSettlementBtn, buildRoadBtn, buildCityBtn, tradeBtn, endBtn].forEach(b => hud.addChild(b.container));
 
-  // ----- Dice (with animation) -----
+  // Dice
   const dice = makeDiceView();
   hud.addChild(dice.container);
 
-  // ----- Texts -----
-  const bannerStyle = new PIXI.TextStyle({ fontFamily: "Arial", fontSize: 24, fill: 0xffffff, fontWeight: "bold" });
+  // Texts
+  const bannerStyle = new PIXI.TextStyle({ fontFamily: "Georgia, serif", fontSize: 22, fill: 0xffffff, stroke: 0x000000, strokeThickness: 4 });
   const bannerText = new PIXI.Text("", bannerStyle);
   hud.addChild(bannerText);
 
@@ -42,16 +37,17 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
 
   // ----- Layout -----
   function layout() {
-    // כפתורים: מימין לשמאל — End | City | Road | Settlement | Roll
+    // סדר מימין לשמאל: End | Trade | City | Road | Settlement | Roll
     let x = app.renderer.width - pad;
 
     endBtn.container.x = x - endBtn.width; endBtn.container.y = pad; x = endBtn.container.x - gap;
+    tradeBtn.container.x = x - tradeBtn.width; tradeBtn.container.y = pad; x = tradeBtn.container.x - gap;
     buildCityBtn.container.x = x - buildCityBtn.width; buildCityBtn.container.y = pad; x = buildCityBtn.container.x - gap;
     buildRoadBtn.container.x = x - buildRoadBtn.width; buildRoadBtn.container.y = pad; x = buildRoadBtn.container.x - gap;
     buildSettlementBtn.container.x = x - buildSettlementBtn.width; buildSettlementBtn.container.y = pad; x = buildSettlementBtn.container.x - gap;
     rollBtn.container.x = x - rollBtn.width; rollBtn.container.y = pad;
 
-    // הקוביות ממוקמות מעט משמאל לכפתור ה-Roll
+    // קוביות מעט משמאל ל-Roll
     dice.container.x = rollBtn.container.x - 160;
     dice.container.y = pad;
 
@@ -63,72 +59,33 @@ export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSett
   layout();
   window.addEventListener("resize", layout);
 
-  // ----- Enable flags -----
-  let rollEnabled = false;
-  let endEnabled = false;
-  let buildSettlementEnabled = false;
-  let buildRoadEnabled = false;
-  let buildCityEnabled = false;
+  // ----- Wiring -----
+  rollBtn.onClick(() => onRoll?.());
+  endBtn.onClick(() => onEndTurn?.());
+  buildRoadBtn.onClick(() => onBuildRoad?.());
+  buildSettlementBtn.onClick(() => onBuildSettlement?.());
+  buildCityBtn.onClick(() => onBuildCity?.());
+  tradeBtn.onClick(() => onTrade?.());
 
-  // ברירת מחדל: הכל כבוי (כולל Roll) עד שה-setup מסתיים
-  rollBtn.setEnabled(false);
-  endBtn.setEnabled(false);
-  buildSettlementBtn.setEnabled(false);
-  buildRoadBtn.setEnabled(false);
-  buildCityBtn.setEnabled(false);
+  // ----- API -----
+  function setBanner(t){ bannerText.text = t; }
+  function setBottom(t){ bottomText.text = t; }
+  function showResult(t){ resultText.text = t; }
 
-  // ----- Click handlers -----
-  rollBtn.onClick(async () => {
-    if (!rollEnabled) return;
-
-    // אנימציה + תוצאה אמיתית
-    await dice.shake(600);
-    const d1 = 1 + Math.floor(Math.random() * 6);
-    const d2 = 1 + Math.floor(Math.random() * 6);
-    const sum = d1 + d2;
-    dice.set(d1, d2);
-
-    // UI basic state (main גם שולט, אז זה רק QoL)
-    setRollEnabled(false);
-    setEndEnabled(true);
-
-    // שולחים גם d1/d2 למקרה שתרצה בעתיד
-    onRoll?.({ d1, d2, sum });
-  });
-
-  endBtn.onClick(() => {
-    if (!endEnabled) return;
-    dice.clear();
-    setEndEnabled(false);
-    setRollEnabled(true);
-    setBuildRoadEnabled(false);
-    setBuildSettlementEnabled(false);
-    setBuildCityEnabled(false);
-    onEndTurn?.();
-  });
-
-  buildRoadBtn.onClick(() => { if (buildRoadEnabled) onBuildRoad?.(); });
-  buildSettlementBtn.onClick(() => { if (buildSettlementEnabled) onBuildSettlement?.(); });
-  buildCityBtn.onClick(() => { if (buildCityEnabled) onBuildCity?.(); });
-
-  // ----- Public API -----
-  function setRollEnabled(e) { rollEnabled = e; rollBtn.setEnabled(e); }
-  function setEndEnabled(e) { endEnabled = e; endBtn.setEnabled(e); }
-  function setBuildSettlementEnabled(e) { buildSettlementEnabled = e; buildSettlementBtn.setEnabled(e); }
-  function setBuildRoadEnabled(e) { buildRoadEnabled = e; buildRoadBtn.setEnabled(e); }
-  function setBuildCityEnabled(e) { buildCityEnabled = e; buildCityBtn.setEnabled(e); }
-  function setBanner(msg) { bannerText.text = msg; }
-  function setBottom(msg) { bottomText.text = msg; }
-  function showResult(msg) { resultText.text = msg; }
+  function setRollEnabled(en){ rollBtn.setEnabled(en); if (!en) dice.clear(); }
+  function setEndEnabled(en){ endBtn.setEnabled(en); }
+  function setBuildRoadEnabled(en){ buildRoadBtn.setEnabled(en); }
+  function setBuildSettlementEnabled(en){ buildSettlementBtn.setEnabled(en); }
+  function setBuildCityEnabled(en){ buildCityBtn.setEnabled(en); }
+  function setTradeEnabled(en){ tradeBtn.setEnabled(en); }
 
   return {
-    setRollEnabled,
-    setEndEnabled,
-    setBuildSettlementEnabled,
-    setBuildRoadEnabled,
-    setBuildCityEnabled,
-    setBanner,
-    setBottom,
-    showResult,
+    container: hud,
+    layout,
+    dice,
+    setBanner, setBottom, showResult,
+    setRollEnabled, setEndEnabled,
+    setBuildRoadEnabled, setBuildSettlementEnabled, setBuildCityEnabled,
+    setTradeEnabled,
   };
 }

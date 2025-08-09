@@ -15,6 +15,8 @@ import { subscribe, patch } from "./game/stateStore.js";
 import { startBuildRoad } from "./game/buildRoad.js";
 import { startBuildSettlement } from "./game/buildSettlement.js";
 import { startBuildCity } from "./game/buildCity.js";
+import { startBankTrade } from "./game/trade.js";
+import { rollDice } from "./catan/rules.js"; // 👈 תיקון: נשתמש בגלגול מקומי אם אין פרמטר
 
 const { app } = initApp();
 
@@ -46,17 +48,25 @@ const hud = createHUD(
   root,
   onRolled,
   endTurn,
+  // onBuildRoad
   () => {
     if (state.phase !== "play") return;
     startBuildRoad({ app, boardC, hud, state, graph, builder });
   },
+  // onBuildSettlement
   () => {
     if (state.phase !== "play") return;
     startBuildSettlement({ app, boardC, hud, state, graph, builder });
   },
+  // onBuildCity
   () => {
     if (state.phase !== "play") return;
     startBuildCity({ app, boardC, hud, state, graph, builder });
+  },
+  // onTrade
+  () => {
+    if (state.phase !== "play") return;
+    startBankTrade({ app, hud, state, resPanel });
   }
 );
 
@@ -79,6 +89,7 @@ const DEBUG_MODE = true; // ← החלף ל-false למשחק רגיל
 if (DEBUG_MODE) {
   debugInit();
 } else {
+  // ---------- Setup Phase (רגיל) ----------
   startSetupPhase({
     app, boardC, hud, resPanel, graph, builder, layout, state,
     onFinish: () => {
@@ -92,14 +103,22 @@ if (DEBUG_MODE) {
       hud.setBuildRoadEnabled(false);
       hud.setBuildSettlementEnabled(false);
       hud.setBuildCityEnabled(false);
+      hud.setTradeEnabled(false);
       resPanel.setCurrent(state.currentPlayer - 1);
     }
   });
 }
 
 // ---------- Play Phase handlers ----------
-function onRolled({ sum }) {
+function onRolled(evt) {
   if (state.phase !== "play") return;
+
+  // 👇 תיקון: אם לא התקבל אובייקט, מגלגלים כאן ומציגים קוביות
+  const roll = evt ?? rollDice();
+  if (hud?.dice && roll?.d1 != null && roll?.d2 != null) {
+    try { hud.dice.set(roll.d1, roll.d2); } catch {}
+  }
+  const sum = roll?.sum ?? 0;
 
   if (sum === 7) {
     state.phase = "discard";
@@ -110,6 +129,7 @@ function onRolled({ sum }) {
     hud.setBuildRoadEnabled(false);
     hud.setBuildSettlementEnabled(false);
     hud.setBuildCityEnabled(false);
+    hud.setTradeEnabled(false);
 
     enterDiscardPhase({ hud, state, resPanel }, () => {
       state.phase = "move-robber";
@@ -118,12 +138,13 @@ function onRolled({ sum }) {
         app, boardC, hud, state, tileSprites, robberSpriteRef, graph, layout, resPanel
       }, () => {
         state.phase = "play";
-        hud.setBottom("You may build or end the turn");
-        hud.setRollEnabled(true);
+        hud.setBottom("You may build, trade, or end the turn");
+        hud.setRollEnabled(true);   // גלגול הבא יהיה בתור הבא
         hud.setEndEnabled(true);
         hud.setBuildRoadEnabled(true);
         hud.setBuildSettlementEnabled(true);
         hud.setBuildCityEnabled(true);
+        hud.setTradeEnabled(true);
       });
     });
     return;
@@ -137,6 +158,7 @@ function onRolled({ sum }) {
   hud.setBuildRoadEnabled(true);
   hud.setBuildSettlementEnabled(true);
   hud.setBuildCityEnabled(true);
+  hud.setTradeEnabled(true);
 }
 
 function endTurn() {
@@ -149,9 +171,11 @@ function endTurn() {
   hud.setBuildRoadEnabled(false);
   hud.setBuildSettlementEnabled(false);
   hud.setBuildCityEnabled(false);
+  hud.setTradeEnabled(false);
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 
+// stage safety
 app.stage.eventMode = 'static';
 app.stage.hitArea = app.screen;
 
@@ -159,6 +183,7 @@ app.stage.hitArea = app.screen;
 // ===== DEBUG HELPERS =====
 // ==========================
 function debugInit() {
+  // 1) לכל שחקן — 5 מכל משאב
   patch(s => {
     s.players.forEach(p => {
       for (const k of Object.keys(p.resources)) p.resources[k] = 5;
@@ -168,13 +193,16 @@ function debugInit() {
     });
   });
 
+  // 2) הצבות יישוב+כביש: סיבוב נחש (1→..→N→N→..→1)
   const occupiedVertices = new Set();
   const occupiedEdges = new Set();
 
   function placeSettlementAndRoadForPlayer(playerIndex, bias = 0) {
     const legalV = builder.legalSettlementVertices(occupiedVertices);
     if (!legalV.length) return;
+
     const vId = legalV[(bias * 7 + playerIndex * 3) % legalV.length];
+
     patch(s => { s.players[playerIndex].settlements.push(vId); });
     builder.placeSettlement(vId, state.players[playerIndex].colorIdx);
     occupiedVertices.add(vId);
@@ -186,19 +214,16 @@ function debugInit() {
       builder.placeRoad(eId, state.players[playerIndex].colorIdx);
       occupiedEdges.add(eId);
     }
-    return vId;
+
+    return vId; // לזה נחזיר משאבי פתיחה בשלב הבא
   }
 
   const n = state.players.length;
   const secondSpotByPlayer = new Array(n).fill(null);
-  for (let i = 0; i < n; i++) {
-    placeSettlementAndRoadForPlayer(i, 0);
-  }
-  for (let i = n - 1; i >= 0; i--) {
-    const vId = placeSettlementAndRoadForPlayer(i, 1);
-    secondSpotByPlayer[i] = vId;
-  }
+  for (let i = 0; i < n; i++) placeSettlementAndRoadForPlayer(i, 0);
+  for (let i = n - 1; i >= 0; i--) secondSpotByPlayer[i] = placeSettlementAndRoadForPlayer(i, 1);
 
+  // 3) הענקת משאבים על היישוב השני
   for (let i = 0; i < n; i++) {
     const vId = secondSpotByPlayer[i];
     if (vId == null) continue;
@@ -209,6 +234,7 @@ function debugInit() {
     });
   }
 
+  // 4) מעבר למשחק
   state.phase = "play";
   state.turn = 1;
   state.currentPlayer = 1;
@@ -219,9 +245,11 @@ function debugInit() {
   hud.setBuildRoadEnabled(false);
   hud.setBuildSettlementEnabled(false);
   hud.setBuildCityEnabled(false);
+  hud.setTradeEnabled(false);
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 
+// מחושב משאבי פתיחה לפי צומת (ללא מדבר)
 function computeInitialResourcesForVertex(vertexId) {
   const v = graph.vertices[vertexId];
   const gained = { brick:0, wood:0, wheat:0, sheep:0, ore:0 };

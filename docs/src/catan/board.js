@@ -1,18 +1,15 @@
-// Generates a fixed base-game layout for M0 (we'll add shuffling/validation later)
+// docs/src/catan/board.js
+
+// מפה קבועה (MVP)
 export function generateBoard() {
-  // Resources count (base game): 4 sheep, 4 wood, 4 wheat, 3 brick, 3 ore, 1 desert
   const tiles = [
     "brick","wood","sheep","wheat","ore",
     "sheep","wood","wheat","brick","sheep",
     "ore","wheat","desert","wood","sheep",
     "wheat","wood","ore","brick"
   ];
-
-  // Standard token sequence (no 7), clockwise from a known top position.
-  // We'll just map in order to the 19 non-desert tiles.
   const tokens = [5,2,6,3,8,10,9,12,11,4,8,10,9,4,5,6,3,11];
 
-  // Place tokens skipping desert
   const withTokens = [];
   let t = 0;
   for (let i = 0; i < tiles.length; i++) {
@@ -24,7 +21,6 @@ export function generateBoard() {
 }
 
 export function colorFor(kind) {
-  // Placeholder fills (we'll replace with textures in M1 for “realistic” look)
   return ({
     water: 0x5aa0c8,
     desert: 0xd8c38e,
@@ -34,4 +30,31 @@ export function colorFor(kind) {
     brick:  0xb04a3a,
     ore:    0x6a6f7b,
   })[kind];
+}
+
+/**
+ * רצף הנמלים לפי ההיקף (clockwise / CCW לא קריטי — ניישר ב-initBoard).
+ * כאן מגדירים רק את ה"טיפוס": 4×"any" + 5×משאב.
+ * posIndices: האינדקסים של צלעות החוף (נגד-השעון) שעליהם יישבו הנמלים.
+ * נוכל לכייל את המספרים בקלות באמצעות דיבאגר המספור.
+ */
+export function standardPortsByCoastIndex() {
+  // סדר טיפוסים: (אפשר לשנות, זה רק ברירת מחדל של הבסיס)
+  const types = [
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "wood" },
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "wheat" },
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "sheep" },
+    { ratio: 3, type: "any" },
+    { ratio: 2, type: "ore" },
+    { ratio: 2, type: "brick" },
+  ];
+
+  // מיפוי לאינדקסי חוף—ערכים התחלתיים (יעבדו טוב עם הפריסה הסטנדרטית).
+  // אם תרצה 100% התאמה לקופסה המקורית, נעדכן אחרי בדיקת הדיבאגר.
+  const posIndices = [3, 5, 8, 10, 14, 18, 20, 24, 27];
+
+  return { types, posIndices };
 }
