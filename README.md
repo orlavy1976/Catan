@@ -58,16 +58,73 @@ Supports **one human player vs bots** with full gameplay mechanics, trading, bui
 
 src/
 ├─ main.js # Main game loop and setup
+├─ core/
+│ ├─ app.js # Application initialization
+│ ├─ state/ # State management
+│ │ ├─ gameState.js # Game state management
+│ │ └─ stateSubscriptions.js # State change subscriptions
+│ └─ config/
+│   ├─ constants.js # Game constants and configuration
+│   └─ gameRules.js # Game rules and validation
 ├─ board/
-│ ├─ board.js # Board generation, randomization, validation
-│ ├─ initBoard.js # Board rendering and setup
+│ ├─ generation/
+│ │ ├─ boardGenerator.js # Board layout generation
+│ │ ├─ tileRandomizer.js # Tile and token randomization
+│ │ └─ validator.js # Board validation (no adjacent 6/8)
+│ ├─ rendering/
+│ │ ├─ boardRenderer.js # Board visual rendering
+│ │ ├─ tileRenderer.js # Individual tile rendering
+│ │ └─ portRenderer.js # Port/harbor rendering
 │ └─ coast.js # Coastline calculation and debugging
+├─ game/
+│ ├─ mechanics/
+│ │ ├─ diceRoll.js # Dice rolling and resource distribution
+│ │ ├─ building.js # Building placement and validation
+│ │ ├─ trading.js # Trading system (bank, port, player)
+│ │ └─ robber.js # Robber movement and stealing
+│ ├─ cards/
+│ │ ├─ developmentCards.js # Dev card management
+│ │ ├─ cardEffects.js # Individual card effect implementations
+│ │ └─ cardRenderer.js # Card UI rendering
+│ ├─ scoring/
+│ │ ├─ scoreCalculator.js # Victory points calculation
+│ │ ├─ longestRoad.js # Longest road algorithm
+│ │ └─ largestArmy.js # Largest army tracking
+│ └─ ai/
+│   ├─ botPlayer.js # AI player logic
+│   └─ botStrategies.js # AI decision making
 ├─ ui/
-│ ├─ index.js # HUD and layout
-│ ├─ button.js # Reusable button component
-│ ├─ diceView.js # Dice rendering and animation
+│ ├─ components/
+│ │ ├─ button.js # Reusable button component
+│ │ ├─ panel.js # Reusable panel component
+│ │ ├─ modal.js # Modal dialog component
+│ │ └─ resourceDisplay.js # Resource counter display
+│ ├─ hud/
+│ │ ├─ hudManager.js # HUD layout and management
+│ │ ├─ actionPanel.js # Action buttons panel
+│ │ ├─ resourcePanel.js # Resource display panel
+│ │ └─ scorePanel.js # Score display panel
+│ ├─ animations/
+│ │ ├─ diceAnimation.js # Dice roll animation
+│ │ ├─ buildAnimation.js # Building placement animations
+│ │ └─ transitionEffects.js # General transition effects
+│ └─ dialogs/
+│   ├─ tradeDialog.js # Trading interface
+│   ├─ devCardDialog.js # Development card interface
+│   └─ gameOverDialog.js # Game end screen
 ├─ utils/
-│ └─ geom.js # Hex geometry helpers (axial coords, pixel conversion)
+│ ├─ geometry/
+│ │ ├─ hexGeometry.js # Hex coordinate system
+│ │ ├─ pixelConversion.js # Coordinate to pixel conversion
+│ │ └─ pathfinding.js # Path algorithms for roads
+│ ├─ validation/
+│ │ ├─ buildingValidator.js # Building placement validation
+│ │ ├─ resourceValidator.js # Resource cost validation
+│ │ └─ gameStateValidator.js # General game state validation
+│ └─ helpers/
+│   ├─ arrayUtils.js # Array manipulation utilities
+│   ├─ randomUtils.js # Random number and selection utilities
+│   └─ debugUtils.js # Debug and logging utilities
 
 
 ---
