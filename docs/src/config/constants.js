@@ -11,3 +11,10 @@ export const PLAYER_COLORS = [
   0xffa000, // כתום
   0x388e3c, // ירוק
 ];
+
+export const BUILD_COSTS = {
+  road: { brick: 1, wood: 1 },
+  settlement: { brick: 1, wood: 1, wheat: 1, sheep: 1 }, // לשלב הבא
+  city: { wheat: 2, ore: 3 }, // לשלב הבא
+};
+

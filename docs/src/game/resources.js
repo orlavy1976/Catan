@@ -1,4 +1,5 @@
-const KEYS = ["brick","wood","wheat","sheep","ore"];
+import { RES_KEYS } from "../config/constants.js";
+import { patch } from "./stateStore.js";
 
 export function distributeResources({ sum, state, layout, graph }) {
   const eligible = [];
@@ -8,23 +9,28 @@ export function distributeResources({ sum, state, layout, graph }) {
     if (t.token === sum && t.kind !== "desert") eligible.push(i);
   }
 
+  // בניית בעלות על צמתים
   const ownerByVertex = new Map();
-  state.players.forEach((p, idx) => {
-    p.settlements.forEach(vId => ownerByVertex.set(vId, idx));
-  });
+  state.players.forEach((p, idx) =>
+    p.settlements.forEach(vId => ownerByVertex.set(vId, idx))
+  );
 
   const gainByPlayer = [initRes(), initRes(), initRes(), initRes()];
+
   eligible.forEach(tileIdx => {
     const kind = layout[tileIdx].kind;
     graph.vertices.forEach(v => {
       if (!v.tiles.has(tileIdx)) return;
       const owner = ownerByVertex.get(v.id);
-      if (owner != null) gainByPlayer[owner][kind] += 1; // settlement=1 (cities later)
+      if (owner != null) gainByPlayer[owner][kind] += 1; // settlement=1
     });
   });
 
-  state.players.forEach((p, idx) => {
-    KEYS.forEach(k => p.resources[k] += gainByPlayer[idx][k]);
+  // עדכון state מרוכז דרך patch (טריגר למנויים)
+  patch(s => {
+    s.players.forEach((p, idx) => {
+      RES_KEYS.forEach(k => { p.resources[k] += gainByPlayer[idx][k]; });
+    });
   });
 
   return gainByPlayer;

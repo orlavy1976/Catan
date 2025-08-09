@@ -1,4 +1,5 @@
-import { PLAYER_COLORS } from "../catan/build.js";
+import { PLAYER_COLORS } from "../config/constants.js";
+import { patch } from "./stateStore.js";
 
 // צבע לשם לצורך באנר
 function colorName(idx){ return ["Red","Blue","Orange","Green"][idx] || "P"; }
@@ -6,12 +7,19 @@ function colorName(idx){ return ["Red","Blue","Orange","Green"][idx] || "P"; }
 export function startSetupPhase({
   app, boardC, hud, resPanel, graph, builder, layout, state, onFinish
 }) {
-  state.phase = "setup";
-  hud.setBanner(`Setup — Player ${state.currentPlayer} (${colorName(currentPlayer(state).colorIdx)})`);
+  // מצב פתיחה של השלב
+  patch(s => {
+    s.phase = "setup";
+    s.setup.placing = "settlement";
+    s.setup.lastSettlementVertex = null;
+  });
+
+  hud.setBanner(`Setup — Player ${state.currentPlayer} (${colorName(currentPlayer().colorIdx)})`);
   hud.setBottom(`Setup: Place Settlement`);
   hud.setRollEnabled(false);
   hud.setEndEnabled(false);
 
+  // אוספים מקומיים להצבה
   const occupiedVertices = new Set();
   const occupiedEdges = new Set();
   const interactiveLayer = new PIXI.Container();
@@ -22,30 +30,50 @@ export function startSetupPhase({
     builder.clearGhosts();
   }
 
-  function currentPlayer(stateRef = state) {
-    return stateRef.players[stateRef.currentPlayer - 1];
+  function currentPlayer(s = state) {
+    return s.players[s.currentPlayer - 1];
   }
 
+  // סדר נחש: 1→2→3→4→4→3→2→1
   function nextPlayerSetup() {
-    const p = state.currentPlayer;
-    if (state.setup.round === 1) {
-      if (p < state.players.length) state.currentPlayer++;
-      else { state.setup.round = 2; state.currentPlayer = state.players.length; }
-    } else {
-      if (p > 1) state.currentPlayer--;
-      else return finishSetup();
+    let finished = false;
+
+    patch(s => {
+      const p = s.currentPlayer;
+      if (s.setup.round === 1) {
+        if (p < s.players.length) {
+          s.currentPlayer++;
+        } else {
+          s.setup.round = 2;
+          s.currentPlayer = s.players.length; // מתחילים הפוך מהאחרון
+        }
+      } else {
+        if (p > 1) {
+          s.currentPlayer--;
+        } else {
+          finished = true; // סימון סיום לפני שנוגעים ב-placing
+        }
+      }
+
+      if (!finished) {
+        s.setup.placing = "settlement";
+        s.setup.lastSettlementVertex = null;
+      }
+    });
+
+    if (finished) {
+      return finishSetup(); // יפעיל onFinish ב-main וידליק את ה-Roll
     }
-    resPanel.setCurrent(state.currentPlayer - 1);
-    state.setup.placing = "settlement";
-    state.setup.lastSettlementVertex = null;
+
     hud.setBanner(`Setup — Player ${state.currentPlayer} (${colorName(currentPlayer().colorIdx)})`);
     hud.setBottom(`Setup: Place Settlement`);
     drawSettlementChoices();
   }
 
+
   function finishSetup() {
     clearInteractions();
-    onFinish?.();
+    onFinish?.(); // main מטפל בהמשך המעבר ל-"play"
   }
 
   function drawSettlementChoices(){
@@ -54,10 +82,13 @@ export function startSetupPhase({
     hud.setEndEnabled(false);
 
     const legals = builder.legalSettlementVertices(occupiedVertices);
+
+    // היילייט
     legals.forEach(vId =>
       builder.drawSettlementGhost(vId, PLAYER_COLORS[currentPlayer().colorIdx], 0.35)
     );
 
+    // האזנה להיטים
     legals.forEach(vId => {
       const v = graph.vertices[vId];
       const hit = new PIXI.Graphics();
@@ -67,17 +98,20 @@ export function startSetupPhase({
       hit.eventMode = 'static';
       hit.cursor = 'pointer';
       hit.on('pointertap', () => {
+        // שמירה ב-state (דרך patch) + ציור
+        patch(s => {
+          s.players[s.currentPlayer - 1].settlements.push(vId);
+          s.setup.placing = "road";
+          s.setup.lastSettlementVertex = vId;
+        });
         builder.placeSettlement(vId, currentPlayer().colorIdx);
-        currentPlayer().settlements.push(vId);
         occupiedVertices.add(vId);
 
-        // ביישוב השני מקבלים משאבים
+        // יישוב שני מקבל משאבים מיד
         if (state.setup.round === 2) {
-          awardInitialResourcesForSettlement({ vertexId: vId, layout, graph, state, hud, resPanel });
+          awardInitialResourcesForSettlement({ vertexId: vId, layout, graph, state, hud });
         }
 
-        state.setup.placing = "road";
-        state.setup.lastSettlementVertex = vId;
         hud.setBottom(`Setup: Place Road`);
         drawRoadChoices();
       });
@@ -92,6 +126,7 @@ export function startSetupPhase({
 
     const vId = state.setup.lastSettlementVertex;
     const legals = builder.legalRoadEdges(occupiedEdges, occupiedVertices, vId);
+
     legals.forEach(eId =>
       builder.drawRoadGhost(eId, PLAYER_COLORS[currentPlayer().colorIdx], 0.35)
     );
@@ -104,8 +139,8 @@ export function startSetupPhase({
       hit.eventMode = 'static';
       hit.cursor = 'pointer';
       hit.on('pointertap', () => {
+        patch(s => { s.players[s.currentPlayer - 1].roads.push(eId); });
         builder.placeRoad(eId, currentPlayer().colorIdx);
-        currentPlayer().roads.push(eId);
         occupiedEdges.add(eId);
         nextPlayerSetup();
       });
@@ -130,24 +165,28 @@ export function startSetupPhase({
     return g;
   }
 
-  // award function (לשימוש פנימי כאן)
-  function awardInitialResourcesForSettlement({ vertexId, layout, graph, state, hud, resPanel }) {
+  // מעניק משאבי פתיחה אחרי היישוב השני — דרך patch בלבד
+  function awardInitialResourcesForSettlement({ vertexId, layout, graph, state, hud }) {
     const v = graph.vertices[vertexId];
-    const p = currentPlayer();
     const gained = { brick:0, wood:0, wheat:0, sheep:0, ore:0 };
+
     v.tiles.forEach(tileIdx => {
       const kind = layout[tileIdx].kind;
       if (kind === "desert") return;
       gained[kind] += 1;
-      p.resources[kind] += 1;
     });
-    resPanel.updateResources(state.players);
-    const parts = ["brick","wood","wheat","sheep","ore"]
-      .filter(k => gained[k] > 0)
-      .map(k => `${gained[k]} ${k}`);
-    if (parts.length) hud.showResult(`Setup gain — P${p.id}: ${parts.join(", ")}`);
+
+    patch(s => {
+      const p = s.players[s.currentPlayer - 1];
+      for (const k in gained) p.resources[k] += gained[k];
+    });
+
+    const parts = Object.entries(gained)
+      .filter(([,n]) => n > 0)
+      .map(([k,n]) => `${n} ${k}`);
+    if (parts.length) hud.showResult(`Setup gain — P${state.currentPlayer}: ${parts.join(", ")}`);
   }
 
-  // start
+  // סטארט
   drawSettlementChoices();
 }

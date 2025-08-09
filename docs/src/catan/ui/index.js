@@ -1,11 +1,18 @@
-// מרכיב ראשי של ה-HUD: מרכיב באנר, קוביות, כפתורי Roll/End ופס תחתון
+// מרכיב ראשי של ה-HUD: באנר, קוביות, כפתורי Roll / Build Road / End Turn, ופס סטטוס
 import { makeBanner } from "./banner.js";
 import { makeButton } from "./button.js";
 import { makeDiceView } from "./diceView.js";
 import { makeStatusBar } from "./statusBar.js";
 import { rollDice } from "../rules.js";
 
-export function createHUD(app, root, onRolled, onEndTurn) {
+/**
+ * @param {PIXI.Application} app
+ * @param {PIXI.Container} root
+ * @param {(res:{d1:number,d2:number,sum:number})=>void} onRolled
+ * @param {()=>void} onEndTurn
+ * @param {()=>void} onBuildRoad
+ */
+export function createHUD(app, root, onRolled, onEndTurn, onBuildRoad) {
   const hud = new PIXI.Container();
   hud.zIndex = 1000;
   app.stage.addChild(hud);
@@ -18,6 +25,9 @@ export function createHUD(app, root, onRolled, onEndTurn) {
   const rollBtn = makeButton("Roll Dice", 180);
   hud.addChild(rollBtn.container);
 
+  const buildRoadBtn = makeButton("Build Road", 180);
+  hud.addChild(buildRoadBtn.container);
+
   const endBtn = makeButton("End Turn", 160);
   hud.addChild(endBtn.container);
 
@@ -27,30 +37,40 @@ export function createHUD(app, root, onRolled, onEndTurn) {
   const status = makeStatusBar("Setup: Place Settlement");
   hud.addChild(status.container);
 
-  // פריסה
+  // -------- פריסה (למנוע חפיפה) --------
   function layout() {
     const pad = 16;
+    const gap = 12;
+
+    // באנר
     banner.container.x = pad;
     banner.container.y = pad;
 
+    // כפתורים: מימין לשמאל — End | Build | Roll
     endBtn.container.x = app.renderer.width - endBtn.width - pad;
     endBtn.container.y = pad;
 
-    rollBtn.container.x = endBtn.container.x - rollBtn.width - 12;
+    buildRoadBtn.container.x = endBtn.container.x - gap - buildRoadBtn.width;
+    buildRoadBtn.container.y = pad;
+
+    rollBtn.container.x = buildRoadBtn.container.x - gap - rollBtn.width;
     rollBtn.container.y = pad;
 
+    // קוביות משמאל ל־Roll
     dice.container.x = rollBtn.container.x - 160;
     dice.container.y = pad;
 
+    // פס תחתון
     status.container.x = pad;
     status.container.y = app.renderer.height - status.height - pad;
   }
   window.addEventListener("resize", layout);
   layout();
 
-  // לוגיקה — Roll & End
+  // -------- לוגיקה --------
   let rollEnabled = true;
   let endEnabled = false;
+  let buildEnabled = false;
 
   rollBtn.onClick(async () => {
     if (!rollEnabled) return;
@@ -61,6 +81,9 @@ export function createHUD(app, root, onRolled, onEndTurn) {
 
     setRollEnabled(false);
     setEndEnabled(true);
+    // על הדיפולט: main יחליט מתי להדליק build; אם תרצה — אפשר גם כאן:
+    // setBuildEnabled(true);
+
     onRolled?.({ d1, d2, sum });
   });
 
@@ -69,9 +92,16 @@ export function createHUD(app, root, onRolled, onEndTurn) {
     dice.clear();
     setEndEnabled(false);
     setRollEnabled(true);
+    setBuildEnabled(false);
     onEndTurn?.();
   });
 
+  buildRoadBtn.onClick(() => {
+    if (!buildEnabled) return;
+    onBuildRoad?.();
+  });
+
+  // -------- API החוצה --------
   function setRollEnabled(enabled) {
     rollEnabled = enabled;
     rollBtn.setEnabled(enabled);
@@ -80,8 +110,11 @@ export function createHUD(app, root, onRolled, onEndTurn) {
     endEnabled = enabled;
     endBtn.setEnabled(enabled);
   }
+  function setBuildEnabled(enabled) {
+    buildEnabled = enabled;
+    buildRoadBtn.setEnabled(enabled);
+  }
 
-  // הודעות חולפות (toast)
   function showResult(text) {
     const msg = new PIXI.Text(text, {
       fontFamily: "Georgia, serif",
@@ -109,5 +142,6 @@ export function createHUD(app, root, onRolled, onEndTurn) {
     showResult,
     setRollEnabled,
     setEndEnabled,
+    setBuildEnabled,
   };
 }

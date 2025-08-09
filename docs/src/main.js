@@ -10,6 +10,8 @@ import { startSetupPhase } from "./game/setupPhase.js";
 import { distributeResources, summarizeGain } from "./game/resources.js";
 import { makeEndTurn } from "./game/turns.js";
 import { enterRobberMove } from "./game/robber.js";
+import { subscribe } from "./game/stateStore.js";
+import { startBuildRoad } from "./game/buildRoad.js";
 
 const { app } = initApp();
 
@@ -36,8 +38,25 @@ layoutBoard();
 window.addEventListener("resize", layoutBoard);
 
 // ---------- UI ----------
-const hud = createHUD(app, root, onRolled, endTurn);
+const hud = createHUD(
+  app,
+  root,
+  onRolled,
+  endTurn,
+  // onBuildRoad
+  () => {
+    if (state.phase !== "play") return;
+    startBuildRoad({ app, boardC, hud, state, graph, builder });
+  }
+);
+
 const resPanel = createResourcePanel(app, state);
+
+// עדכון אוטומטי של הפאנל בכל patch(state)
+subscribe((s) => {
+  resPanel.updateResources(s.players);
+  resPanel.setCurrent(s.currentPlayer - 1);
+});
 resPanel.setCurrent(state.currentPlayer - 1);
 
 // ---------- Graph/Builder ----------
@@ -55,6 +74,7 @@ startSetupPhase({
     hud.setBottom(`Ready: Roll Dice`);
     hud.setRollEnabled(true);
     hud.setEndEnabled(false);
+    hud.setBuildEnabled(false); // בנייה הופכת לזמינה רק אחרי גלגול
     resPanel.setCurrent(state.currentPlayer - 1);
   }
 });
@@ -69,13 +89,15 @@ function onRolled({ sum }) {
     hud.setBottom("Click a tile to move the robber");
     hud.setRollEnabled(false);
     hud.setEndEnabled(false);
+    hud.setBuildEnabled(false);
     enterRobberMove({
       app, boardC, hud, state, tileSprites, robberSpriteRef
     }, () => {
       state.phase = "play";
       hud.setBottom("Ready: End Turn");
-      hud.setRollEnabled(false);
+      hud.setRollEnabled(false); // כבר גלגלנו בתור הזה
       hud.setEndEnabled(true);
+      hud.setBuildEnabled(false); // אחרי 7 אין בנייה עד סוף התור
       hud.showResult("Robber moved.");
     });
     return;
@@ -84,16 +106,21 @@ function onRolled({ sum }) {
   const gain = distributeResources({ sum, state, layout, graph });
   const msg = summarizeGain(gain);
   if (msg) hud.showResult(msg);
-  hud.setEndEnabled(true); // roll is already disabled by HUD
+
+  // אחרי גלגול רגיל: אפשר לסיים תור ולבנות כביש
+  hud.setEndEnabled(true);
+  hud.setBuildEnabled(true);
 }
 
 function endTurn() {
   if (state.phase !== "play") return;
   makeEndTurn(state)(); // advances player/turn
+
   hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
   hud.setBottom(`Ready: Roll Dice`);
   hud.setRollEnabled(true);
   hud.setEndEnabled(false);
+  hud.setBuildEnabled(false); // שחקן הבא יצטרך לגלגל לפני בנייה
   resPanel.setCurrent(state.currentPlayer - 1);
 }
 
