@@ -1,41 +1,59 @@
 import { axialToPixel, hexPolygonPoints, standardAxials } from "../utils/geom.js";
 import { colorFor } from "./board.js";
+import { createTextures } from "../core/assets.js";
 
 export function drawBoard(root, options = {}) {
   const { size = 64 } = options;
 
-  // Container we can scale/center on resize
+  // We'll need app to render textures; grab from global PIXI Application
+  // Easiest path: PIXI.Application.shared doesn't exist in v7, so read from root.parent
+  const app = root.parent?.parent?.app ?? PIXI.utils?.app; // fallback if you injected
+  // If not available, we can find via the renderer on stage
+  const renderer = root.parent?.renderer || (root.parent && root.parent.renderer) || null;
+  const textures = createTextures(app ?? PIXI.Application.shared ?? PIXI.app ?? { renderer: PIXI.autoDetectRenderer?.() });
+
   const boardC = new PIXI.Container();
   root.addChild(boardC);
 
-  // Draw sea backdrop as a rounded rectangle behind everything
+  // Sea backdrop with texture
   const sea = new PIXI.Graphics();
-  sea.beginFill(colorFor("water"));
+  sea.beginTextureFill({ texture: textures.water });
   sea.drawRoundedRect(-700, -600, 1400, 1200, 60);
   sea.endFill();
-  sea.alpha = 0.92;
+  sea.alpha = 0.95;
   boardC.addChild(sea);
 
-  // Axial positions (19 tiles)
   const axials = standardAxials();
 
-  // Return helpers for external use (so main.js can place tokens/robber)
   function placeTile(kind, axial) {
     const center = axialToPixel(axial, size);
     const pts = hexPolygonPoints(center, size);
     const g = new PIXI.Graphics();
 
-    // Drop shadow
+    // Soft shadow
     g.beginFill(0x000000, 0.18);
     g.drawPolygon(hexPolygonPoints({x:center.x+4, y:center.y+5}, size));
     g.endFill();
 
-    // Core fill
-    g.beginFill(colorFor(kind));
+    // Texture fill per resource
+    const tex = {
+      desert: textures.desert,
+      wood: textures.wood,
+      sheep: textures.sheep,
+      wheat: textures.wheat,
+      brick: textures.brick,
+      ore: textures.ore,
+    }[kind];
+
+    if (tex) {
+      g.beginTextureFill({ texture: tex });
+    } else {
+      g.beginFill(colorFor(kind));
+    }
     g.drawPolygon(pts);
     g.endFill();
 
-    // Bevel-ish inner ring
+    // Inner bevel line
     g.lineStyle({ width: 2, color: 0x000000, alpha: 0.12, alignment: 0 });
     g.drawPolygon(pts);
 
