@@ -5,12 +5,14 @@ const TILE_TYPES = ["field","pasture","forest","hill","mountain","desert"];
 // ------- Pixi App -------
 const app = new PIXI.Application({ background: "#0e0f12", antialias: true });
 document.body.appendChild(app.view);
-addEventListener('resize', resize);
 
-// Root containers
+// Root containers (create BEFORE wiring resize)
 const stage = app.stage;
 const board = new PIXI.Container();
 stage.addChild(board);
+
+// Wire resize after board exists
+addEventListener('resize', resize);
 
 // ------- Axial hex math (flat-topped) -------
 function axialToPixel(q,r){
@@ -28,11 +30,6 @@ function polygonPoints(cx,cy,r){
 }
 
 // ------- Create Catan-shaped layout (3-4-5-4-3) -------
-/*
- Axial coords: row r has N tiles, centered on q=0
- r: -2 -1  0  1  2    N: 3,4,5,4,3
- q ranges to keep shape centered
-*/
 function catanAxials(){
   const rows = [
     {r:-2, n:3},
@@ -96,7 +93,7 @@ function drawBoard(){
     g.drawPolygon(polygonPoints(0,0,HEX_R));
     g.endFill();
 
-    // hover outline (no filters needed)
+    // hover outline
     g.on('pointerover', ()=>{
       g.lineStyle(5, 0xffffff, 0.8);
       g.clear();
@@ -135,11 +132,13 @@ function drawBoard(){
 }
 
 function resize(){
+  // Guard in case resize fires very early
+  if (!app?.renderer || !board) return;
   app.renderer.resize(innerWidth, innerHeight);
   drawBoard();
 }
 
-// UI wire-up (existing buttons in your HTML)
+// UI wire-up
 const shuffleBtn = document.getElementById('shuffle');
 if (shuffleBtn){
   shuffleBtn.onclick = ()=>{
@@ -148,7 +147,6 @@ if (shuffleBtn){
   };
 }
 
-// hint text (optional)
 function hint(s){
   const el = document.getElementById('hint');
   if (el) el.textContent = s;
