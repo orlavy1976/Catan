@@ -88,7 +88,7 @@ function drawBoard(){
     g.position.set(x+offset.x, y+offset.y);
 
     // tile fill
-    g.beginFill(PIXI.Color.from(COLORS[t.type] || "#888"));
+    g.beginFill(COLORS[t.type] ? PIXI.utils.string2hex(COLORS[t.type]) : 0x888888);
     g.lineStyle(3, 0x000000, 0.45);
     g.drawPolygon(polygonPoints(0,0,HEX_R));
     g.endFill();
@@ -97,14 +97,14 @@ function drawBoard(){
     g.on('pointerover', ()=>{
       g.lineStyle(5, 0xffffff, 0.8);
       g.clear();
-      g.beginFill(PIXI.Color.from(COLORS[t.type] || "#888"));
+      g.beginFill(COLORS[t.type] ? PIXI.utils.string2hex(COLORS[t.type]) : 0x888888);
       g.drawPolygon(polygonPoints(0,0,HEX_R));
       g.endFill();
       hint(`(${t.q},${t.r}) ${t.type}`);
     });
     g.on('pointerout', ()=>{
       g.clear();
-      g.beginFill(PIXI.Color.from(COLORS[t.type] || "#888"));
+      g.beginFill(COLORS[t.type] ? PIXI.utils.string2hex(COLORS[t.type]) : 0x888888);
       g.lineStyle(3, 0x000000, 0.45);
       g.drawPolygon(polygonPoints(0,0,HEX_R));
       g.endFill();
