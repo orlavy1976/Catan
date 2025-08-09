@@ -1,23 +1,25 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catan-like Board (PixiJS)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catan (Base) – JS/HTML</title>
+  <!-- PixiJS (pinned v7, global UMD) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.0/pixi.min.js"></script>
   <style>
-    html,body{margin:0;height:100%;background:#0e0f12;color:#e7e7e7;font-family:system-ui}
-    #ui{position:fixed;left:12px;top:12px;background:#1c1f27cc;padding:8px 12px;border-radius:12px}
-    button{cursor:pointer}
+    html, body { height: 100%; margin: 0; background: #5aa0c8; }
+    #app { position: fixed; inset: 0; }
+    /* subtle vignette for a bit of depth */
+    body::after{
+      content:""; position:fixed; inset:0;
+      pointer-events:none;
+      background: radial-gradient(80% 80% at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.15) 100%);
+      mix-blend-mode: multiply;
+    }
   </style>
 </head>
 <body>
-  <div id="ui">
-    <button id="shuffle">Shuffle Tiles</button>
-    <span id="hint"></span>
-  </div>
-
-  <!-- PixiJS via CDN (plain JS) -->
-  <script src="https://unpkg.com/pixi.js@7/dist/pixi.min.js"></script>
-  <script type="module" src="./main.js"></script>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
