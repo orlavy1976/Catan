@@ -85,12 +85,12 @@ const hud = createHUD(
   // onBuyDev
   () => {
     console.log("🃏 Buy dev card");
-    showBuyDevCardDialog({ app, hud, state, resPanel });
+    showBuyDevCardDialog({ app, hud, state, resPanel, refreshScores });
   },
   // onPlayDev
   () => {
     console.log("🎯 Play dev card");
-    showPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder });
+    showPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores });
   }
 );
 

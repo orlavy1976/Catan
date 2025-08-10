@@ -38,7 +38,7 @@ import { playMonopoly } from "../devcards/effects/monopoly.js";
  * Show development card purchase confirmation
  * @param {object} deps - Dependencies
  */
-export function showBuyDevCardDialog({ app, hud, state, resPanel }) {
+export function showBuyDevCardDialog({ app, hud, state, resPanel, refreshScores }) {
   if (state.phase !== "play") {
     hud.showResult("You can only buy a development card on your turn.");
     return;
@@ -87,6 +87,9 @@ export function showBuyDevCardDialog({ app, hud, state, resPanel }) {
 
     // Update UI
     resPanel?.updateResources?.(state.players);
+    
+    // Refresh scores (important for victory point cards)
+    refreshScores?.();
     
     // Show card reveal
     showCardRevealDialog({ app, hud, card });
@@ -160,7 +163,7 @@ function showCardRevealDialog({ app, hud, card }) {
  * @param {object} deps - Dependencies
  */
 export function showPlayDevCardDialog(deps) {
-  const { app, hud, state } = deps;
+  const { app, hud, state, refreshScores } = deps;
   
   if (state.phase !== "play") {
     hud.showResult("You can only play development cards on your turn.");
@@ -261,7 +264,7 @@ export function showPlayDevCardDialog(deps) {
  * @param {object} deps - Dependencies
  */
 export function showMonopolyDialog(deps) {
-  const { app, hud, state, resPanel } = deps;
+  const { app, hud, state, resPanel, refreshScores } = deps;
   
   const dialog = createResourceDialog(app, {
     title: "Monopoly",
@@ -269,7 +272,7 @@ export function showMonopolyDialog(deps) {
     resources: ['brick', 'wood', 'wheat', 'sheep', 'ore'],
     animation: DIALOG_ANIMATION.SCALE,
     onResourceSelect: (resource) => {
-      executeMonopoly(resource, state, resPanel, hud);
+      executeMonopoly(resource, state, resPanel, hud, refreshScores);
     },
     onCancel: () => {
       enableHUD(hud);
@@ -287,7 +290,7 @@ export function showMonopolyDialog(deps) {
  * @param {object} deps - Dependencies
  */
 export function showYearOfPlentyDialog(deps) {
-  const { app, hud, state, resPanel } = deps;
+  const { app, hud, state, resPanel, refreshScores } = deps;
   
   let selectedResources = [];
   
@@ -374,7 +377,7 @@ export function showYearOfPlentyDialog(deps) {
   // Wire events
   confirmButton.onClick(() => {
     if (selectedResources.length === 2) {
-      executeYearOfPlenty(selectedResources, state, resPanel, hud);
+      executeYearOfPlenty(selectedResources, state, resPanel, hud, refreshScores);
       dialog.close();
     }
   });
@@ -444,7 +447,7 @@ function canAfford(resources, cost) {
  * @param {object} deps - Dependencies
  */
 function playCard(cardType, deps) {
-  const { hud, state } = deps;
+  const { hud, state, refreshScores } = deps;
   const me = state.players[state.currentPlayer - 1];
   
   // Remove card from player
@@ -473,6 +476,9 @@ function playCard(cardType, deps) {
       hud.showResult(`Played ${pretty(cardType)}`);
   }
 
+  // Refresh scores after playing a card (important for knights/largest army)
+  refreshScores?.();
+
   enableHUD(hud);
 }
 
@@ -482,8 +488,9 @@ function playCard(cardType, deps) {
  * @param {object} state - Game state
  * @param {object} resPanel - Resource panel
  * @param {object} hud - HUD
+ * @param {function} refreshScores - Score refresh function
  */
-function executeMonopoly(resource, state, resPanel, hud) {
+function executeMonopoly(resource, state, resPanel, hud, refreshScores) {
   const meIdx = state.currentPlayer - 1;
   const me = state.players[meIdx];
   let taken = 0;
@@ -501,6 +508,7 @@ function executeMonopoly(resource, state, resPanel, hud) {
 
   resPanel?.updateResources?.(state.players);
   hud.showResult(`Monopoly: took ${taken} ${resource} from other players`);
+  refreshScores?.();
   enableHUD(hud);
 }
 
@@ -510,8 +518,9 @@ function executeMonopoly(resource, state, resPanel, hud) {
  * @param {object} state - Game state
  * @param {object} resPanel - Resource panel
  * @param {object} hud - HUD
+ * @param {function} refreshScores - Score refresh function
  */
-function executeYearOfPlenty(resources, state, resPanel, hud) {
+function executeYearOfPlenty(resources, state, resPanel, hud, refreshScores) {
   const me = state.players[state.currentPlayer - 1];
   
   resources.forEach(resource => {
@@ -520,6 +529,7 @@ function executeYearOfPlenty(resources, state, resPanel, hud) {
 
   resPanel?.updateResources?.(state.players);
   hud.showResult(`Year of Plenty: received ${resources.join(' and ')}`);
+  refreshScores?.();
   enableHUD(hud);
 }
 
