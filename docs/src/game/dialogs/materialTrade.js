@@ -36,12 +36,6 @@ import { RES_KEYS } from '../../config/constants.js';
  * @param {object} deps - Dependencies (app, hud, state, resPanel, graph)
  */
 export function showMaterialTradeMenu({ app, hud, state, resPanel, graph }) {
-  // Temporary simple test - just show bank trade directly
-  console.log("🛍️ Trade menu - showing bank trade dialog directly for testing");
-  showMaterialBankTradeDialog({ app, hud, state, resPanel, graph });
-  
-  // Original choice dialog (commented out for testing)
-  /*
   const dialog = createMaterialChoice(app, {
     title: "Trade",
     message: "Choose your trading partner",
@@ -63,7 +57,6 @@ export function showMaterialTradeMenu({ app, hud, state, resPanel, graph }) {
 
   disableHUD(hud);
   dialog.show();
-  */
 }
 
 // ==================== BANK TRADE DIALOG ====================
@@ -146,28 +139,332 @@ export function showMaterialBankTradeDialog({ app, hud, state, resPanel, graph }
  * @param {object} deps - Dependencies
  */
 export function showMaterialPlayerTradeDialog({ app, hud, state, resPanel, graph }) {
-  const dialog = createMaterialDialog(app, {
-    type: MATERIAL_DIALOG_TYPES.LARGE,
-    title: "Player Trade",
-    animation: 'scale',
-    elevation: 4
+  console.log('showMaterialPlayerTradeDialog called - creating player trade interface');
+  
+  // Disable HUD first
+  disableHUD(hud);
+  
+  const currentPlayer = state.players[state.currentPlayer - 1];
+  const otherPlayers = state.players.filter((_, i) => i !== state.currentPlayer - 1);
+  
+  if (otherPlayers.length === 0) {
+    // No other players to trade with
+    enableHUD(hud);
+    if (hud.showResult) hud.showResult("No other players to trade with");
+    return;
+  }
+
+  // Create dialog
+  const overlay = new PIXI.Container();
+  overlay.zIndex = 10000;
+
+  // Background dim
+  const dim = new PIXI.Graphics();
+  dim.beginFill(0x000000, 0.5);
+  dim.drawRect(0, 0, app.renderer.width, app.renderer.height);
+  dim.endFill();
+  overlay.addChild(dim);
+
+  // Dialog panel
+  const panel = new PIXI.Container();
+  overlay.addChild(panel);
+
+  // Background
+  const bg = new PIXI.Graphics();
+  bg.beginFill(0x1f2937, 0.96);
+  bg.drawRoundedRect(0, 0, 600, 450, 16);
+  bg.endFill();
+  bg.lineStyle({ width: 2, color: 0xffffff, alpha: 0.18 });
+  bg.drawRoundedRect(0, 0, 600, 450, 16);
+  panel.addChild(bg);
+
+  // Title
+  const title = new PIXI.Text("Player Trade", { 
+    fontFamily: "Georgia, serif", 
+    fontSize: 22, 
+    fill: 0xffffff 
+  });
+  title.x = 20; 
+  title.y = 20;
+  panel.addChild(title);
+
+  // Trade state
+  let selectedPlayer = 0;
+  const giveResources = { brick: 0, wood: 0, wheat: 0, sheep: 0, ore: 0 };
+  const getResources = { brick: 0, wood: 0, wheat: 0, sheep: 0, ore: 0 };
+
+  // Player selection
+  const playerLabel = new PIXI.Text("Trade with:", { 
+    fontFamily: "Arial", 
+    fontSize: 16, 
+    fill: 0xffffff 
+  });
+  playerLabel.x = 20; 
+  playerLabel.y = 60;
+  panel.addChild(playerLabel);
+
+  const playerButtons = [];
+  let playerX = 120;
+  otherPlayers.forEach((player, index) => {
+    const button = createPlayerButton(`Player ${state.players.indexOf(player) + 1}`, () => {
+      selectedPlayer = index;
+      updatePlayerButtons();
+    });
+    button.x = playerX;
+    button.y = 55;
+    panel.addChild(button);
+    playerButtons.push(button);
+    playerX += 120;
   });
 
-  // Trade builder interface
-  const tradeBuilder = createPlayerTradeBuilder(state, (tradeOffer) => {
-    // Send trade offer to other players
-    showTradeOfferDialog(app, tradeOffer, state, dialog);
+  function updatePlayerButtons() {
+    playerButtons.forEach((btn, i) => {
+      btn.alpha = i === selectedPlayer ? 1 : 0.6;
+    });
+  }
+  updatePlayerButtons();
+
+  // Give section
+  const giveLabel = new PIXI.Text("You give:", { 
+    fontFamily: "Arial", 
+    fontSize: 16, 
+    fill: 0xffffff 
   });
+  giveLabel.x = 20; 
+  giveLabel.y = 110;
+  panel.addChild(giveLabel);
 
-  dialog.addContent(tradeBuilder);
+  const giveControls = createResourceControls(giveResources, currentPlayer.resources, 20, 140);
+  giveControls.forEach(control => panel.addChild(control));
 
-  // Add buttons
-  dialog.addButton('Cancel', {
-    variant: 'text',
-    onClick: () => enableHUD(hud)
+  // Get section
+  const getLabel = new PIXI.Text("You get:", { 
+    fontFamily: "Arial", 
+    fontSize: 16, 
+    fill: 0xffffff 
   });
+  getLabel.x = 20; 
+  getLabel.y = 240;
+  panel.addChild(getLabel);
 
-  dialog.show();
+  const getControls = createResourceControls(getResources, null, 20, 270);
+  getControls.forEach(control => panel.addChild(control));
+
+  // Buttons
+  const sendButton = createTradeButton("Send Offer", () => {
+    const targetPlayer = otherPlayers[selectedPlayer];
+    const targetIndex = state.players.indexOf(targetPlayer);
+    
+    // Validate trade
+    const giveTotal = Object.values(giveResources).reduce((sum, val) => sum + val, 0);
+    const getTotal = Object.values(getResources).reduce((sum, val) => sum + val, 0);
+    
+    if (giveTotal === 0 && getTotal === 0) {
+      if (hud.showResult) hud.showResult("Select resources to trade");
+      return;
+    }
+    
+    // Check if player has enough resources
+    for (const [resource, amount] of Object.entries(giveResources)) {
+      if (amount > (currentPlayer.resources[resource] || 0)) {
+        if (hud.showResult) hud.showResult(`Not enough ${resource}`);
+        return;
+      }
+    }
+    
+    closeDialog();
+    showTradeOfferConfirmation(targetIndex, giveResources, getResources);
+  });
+  sendButton.x = 320;
+  sendButton.y = 390;
+  panel.addChild(sendButton);
+
+  const cancelButton = createTradeButton("Cancel", closeDialog);
+  cancelButton.x = 180;
+  cancelButton.y = 390;
+  panel.addChild(cancelButton);
+
+  function closeDialog() {
+    app.stage.removeChild(overlay);
+    enableHUD(hud);
+  }
+
+  function showTradeOfferConfirmation(targetIndex, give, get) {
+    const giveText = Object.entries(give)
+      .filter(([_, amount]) => amount > 0)
+      .map(([resource, amount]) => `${amount} ${resource}`)
+      .join(", ");
+    
+    const getText = Object.entries(get)
+      .filter(([_, amount]) => amount > 0)
+      .map(([resource, amount]) => `${amount} ${resource}`)
+      .join(", ");
+    
+    // For now, just execute the trade immediately
+    // In a full implementation, this would send an offer to the target player
+    if (giveText && getText) {
+      // Execute trade
+      const targetPlayer = state.players[targetIndex];
+      
+      // Remove resources from current player
+      Object.entries(give).forEach(([resource, amount]) => {
+        currentPlayer.resources[resource] = (currentPlayer.resources[resource] || 0) - amount;
+      });
+      
+      // Add resources to current player
+      Object.entries(get).forEach(([resource, amount]) => {
+        currentPlayer.resources[resource] = (currentPlayer.resources[resource] || 0) + amount;
+      });
+      
+      // Update resource panel
+      if (resPanel && resPanel.updateResources) {
+        resPanel.updateResources(state.players);
+      }
+      
+      if (hud.showResult) {
+        hud.showResult(`Trade completed: Gave ${giveText}, Got ${getText}`);
+      }
+    }
+  }
+
+  // Position panel
+  panel.x = (app.renderer.width - 600) / 2;
+  panel.y = (app.renderer.height - 450) / 2;
+
+  // Add to stage
+  app.stage.addChild(overlay);
+
+  // Helper function to create player buttons
+  function createPlayerButton(text, onClick) {
+    const button = new PIXI.Container();
+    const bg = new PIXI.Graphics();
+    bg.beginFill(0x374151);
+    bg.drawRoundedRect(0, 0, 100, 30, 6);
+    bg.endFill();
+    button.addChild(bg);
+
+    const label = new PIXI.Text(text, { 
+      fontFamily: "Arial", 
+      fontSize: 14, 
+      fill: 0xffffff 
+    });
+    label.anchor.set(0.5);
+    label.x = 50; 
+    label.y = 15;
+    button.addChild(label);
+
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
+    button.on('pointertap', onClick);
+    
+    return button;
+  }
+
+  // Helper function to create resource controls
+  function createResourceControls(resourceData, maxResources, startX, startY) {
+    const controls = [];
+    const resources = ['brick', 'wood', 'wheat', 'sheep', 'ore'];
+    
+    resources.forEach((resource, index) => {
+      const container = new PIXI.Container();
+      
+      // Resource name
+      const name = new PIXI.Text(resource, { 
+        fontFamily: "Arial", 
+        fontSize: 14, 
+        fill: 0xffffff 
+      });
+      name.x = startX + index * 110;
+      name.y = startY;
+      controls.push(name);
+      
+      // Amount display
+      const amountText = new PIXI.Text("0", { 
+        fontFamily: "Arial", 
+        fontSize: 16, 
+        fill: 0xffffaa 
+      });
+      amountText.x = startX + index * 110 + 40;
+      amountText.y = startY + 25;
+      controls.push(amountText);
+      
+      // Minus button
+      const minusBtn = createSmallButton("-", () => {
+        if (resourceData[resource] > 0) {
+          resourceData[resource]--;
+          amountText.text = resourceData[resource].toString();
+        }
+      });
+      minusBtn.x = startX + index * 110;
+      minusBtn.y = startY + 50;
+      controls.push(minusBtn);
+      
+      // Plus button
+      const plusBtn = createSmallButton("+", () => {
+        const canAdd = !maxResources || 
+          resourceData[resource] < (maxResources[resource] || 0);
+        if (canAdd) {
+          resourceData[resource]++;
+          amountText.text = resourceData[resource].toString();
+        }
+      });
+      plusBtn.x = startX + index * 110 + 60;
+      plusBtn.y = startY + 50;
+      controls.push(plusBtn);
+    });
+    
+    return controls;
+  }
+
+  function createSmallButton(text, onClick) {
+    const button = new PIXI.Container();
+    const bg = new PIXI.Graphics();
+    bg.beginFill(0x4f46e5);
+    bg.drawRoundedRect(0, 0, 25, 25, 4);
+    bg.endFill();
+    button.addChild(bg);
+
+    const label = new PIXI.Text(text, { 
+      fontFamily: "Arial", 
+      fontSize: 14, 
+      fill: 0xffffff 
+    });
+    label.anchor.set(0.5);
+    label.x = 12.5; 
+    label.y = 12.5;
+    button.addChild(label);
+
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
+    button.on('pointertap', onClick);
+    
+    return button;
+  }
+
+  function createTradeButton(text, onClick) {
+    const button = new PIXI.Container();
+    const bg = new PIXI.Graphics();
+    bg.beginFill(0x2563eb);
+    bg.drawRoundedRect(0, 0, 120, 40, 8);
+    bg.endFill();
+    button.addChild(bg);
+
+    const label = new PIXI.Text(text, { 
+      fontFamily: "Arial", 
+      fontSize: 16, 
+      fill: 0xffffff 
+    });
+    label.anchor.set(0.5);
+    label.x = 60; 
+    label.y = 20;
+    button.addChild(label);
+
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
+    button.on('pointertap', onClick);
+    
+    return button;
+  }
 }
 
 // ==================== HELPER FUNCTIONS ====================
@@ -323,7 +620,7 @@ function createPlayerTradeBuilder(state, onCreateOffer) {
   });
   container.materialLayout.addChild(createOfferButton.container);
 
-  return container.container;
+  return container;
 }
 
 /**

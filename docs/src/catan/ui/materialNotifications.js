@@ -13,7 +13,13 @@ import {
 import { 
   createMaterialText,
   createMaterialContainer,
-  drawMaterialCard
+  drawMaterialCard,
+  animateScale,
+  animateFade,
+  animateSlide,
+  fadeIn,
+  fadeOut,
+  EASING
 } from '../../utils/materialUI.js';
 
 import { createMaterialButton } from './materialButton.js';
@@ -519,54 +525,25 @@ export function createMaterialNotificationSystem(app) {
     mainNotificationCard.y = -NOTIFICATION_HEIGHT;
     mainNotificationCard.alpha = 0;
     
-    return new Promise(resolve => {
-      const startTime = performance.now();
-      const duration = MATERIAL_MOTION.duration.medium;
-      
-      function animate() {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easedProgress = easeOutQuart(progress);
-        
-        mainNotificationCard.y = -NOTIFICATION_HEIGHT + (NOTIFICATION_HEIGHT + MATERIAL_SPACING[3]) * easedProgress;
-        mainNotificationCard.alpha = easedProgress;
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          resolve();
-        }
-      }
-      animate();
-    });
+    const targetY = MATERIAL_SPACING[3];
+    
+    return Promise.all([
+      animateSlide(mainNotificationCard, { x: mainNotificationCard.x, y: targetY }, MATERIAL_MOTION.duration.medium, 'easeOutQuart'),
+      animateFade(mainNotificationCard, 1, MATERIAL_MOTION.duration.medium, 'easeOutQuart')
+    ]);
   }
   
   /**
    * Animation: Notification slide out to top
    */
   async function animateNotificationOut() {
-    return new Promise(resolve => {
-      const startTime = performance.now();
-      const duration = MATERIAL_MOTION.duration.short;
-      const startY = mainNotificationCard.y;
-      const startAlpha = mainNotificationCard.alpha;
-      
-      function animate() {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easedProgress = easeInQuart(progress);
-        
-        mainNotificationCard.y = startY - (NOTIFICATION_HEIGHT + MATERIAL_SPACING[3]) * easedProgress;
-        mainNotificationCard.alpha = startAlpha * (1 - easedProgress);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          resolve();
-        }
-      }
-      animate();
-    });
+    const startY = mainNotificationCard.y;
+    const targetY = startY - (NOTIFICATION_HEIGHT + MATERIAL_SPACING[3]);
+    
+    return Promise.all([
+      animateSlide(mainNotificationCard, { x: mainNotificationCard.x, y: targetY }, MATERIAL_MOTION.duration.short, 'easeInQuart'),
+      animateFade(mainNotificationCard, 0, MATERIAL_MOTION.duration.short, 'easeInQuart')
+    ]);
   }
   
   /**
@@ -576,54 +553,25 @@ export function createMaterialNotificationSystem(app) {
     historyPanel.x = app.renderer.width;
     historyPanel.alpha = 0;
     
-    return new Promise(resolve => {
-      const startTime = performance.now();
-      const duration = MATERIAL_MOTION.duration.medium;
-      
-      function animate() {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easedProgress = easeOutQuart(progress);
-        
-        historyPanel.x = app.renderer.width - (PANEL_WIDTH + MATERIAL_SPACING[3]) * easedProgress;
-        historyPanel.alpha = easedProgress;
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          resolve();
-        }
-      }
-      animate();
-    });
+    const targetX = app.renderer.width - PANEL_WIDTH - MATERIAL_SPACING[3];
+    
+    return Promise.all([
+      animateSlide(historyPanel, { x: targetX, y: historyPanel.y }, MATERIAL_MOTION.duration.medium, 'easeOutQuart'),
+      animateFade(historyPanel, 1, MATERIAL_MOTION.duration.medium, 'easeOutQuart')
+    ]);
   }
   
   /**
    * Animation: History panel slide out to right
    */
   async function animatePanelOut() {
-    return new Promise(resolve => {
-      const startTime = performance.now();
-      const duration = MATERIAL_MOTION.duration.short;
-      const startX = historyPanel.x;
-      const startAlpha = historyPanel.alpha;
-      
-      function animate() {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easedProgress = easeInQuart(progress);
-        
-        historyPanel.x = startX + (PANEL_WIDTH + MATERIAL_SPACING[3]) * easedProgress;
-        historyPanel.alpha = startAlpha * (1 - easedProgress);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          resolve();
-        }
-      }
-      animate();
-    });
+    const startX = historyPanel.x;
+    const targetX = startX + PANEL_WIDTH + MATERIAL_SPACING[3];
+    
+    return Promise.all([
+      animateSlide(historyPanel, { x: targetX, y: historyPanel.y }, MATERIAL_MOTION.duration.short, 'easeInQuart'),
+      animateFade(historyPanel, 0, MATERIAL_MOTION.duration.short, 'easeInQuart')
+    ]);
   }
   
   /**
@@ -714,37 +662,7 @@ export function createMaterialNotificationSystem(app) {
     console.log("📱 Layout complete - Notification:", { x: mainNotificationCard.x, y: mainNotificationCard.y }, "History:", { x: historyPanel.x, y: historyPanel.y });
   }
   
-  // Easing functions
-  function easeOutQuart(t) {
-    return 1 - Math.pow(1 - t, 4);
-  }
-  
-  function easeInQuart(t) {
-    return t * t * t * t;
-  }
-  
-  // Simple scale animation helper
-  function animateScale(target, scale, duration) {
-    return new Promise(resolve => {
-      const startTime = performance.now();
-      const startScale = target.scale ? target.scale.x : 1;
-      
-      function animate() {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const currentScale = startScale + (scale - startScale) * easeOutQuart(progress);
-        
-        target.scale.set(currentScale);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          resolve();
-        }
-      }
-      animate();
-    });
-  }
+
   
   // Re-layout on window resize
   window.addEventListener("resize", layout);

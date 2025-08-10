@@ -218,56 +218,35 @@ export function arrangeHorizontally(elements, startX = 0, gap = SPACING.base) {
 }
 
 // ==================== ANIMATION HELPERS ====================
+// Legacy animation functions - use materialUI.js for new animations
+
+import { 
+  fadeIn as materialFadeIn, 
+  scaleTo as materialScaleTo,
+  animateFade,
+  animateScale
+} from './materialUI.js';
 
 /**
+ * @deprecated Use fadeIn from materialUI.js instead
  * Create a simple fade in animation
  * @param {PIXI.Container} container - Container to animate
  * @param {number} duration - Animation duration in ms
  * @param {function} onComplete - Callback when animation completes
  */
 export function fadeIn(container, duration = EFFECTS.animation.normal, onComplete = null) {
-  container.alpha = 0;
-  
-  const startTime = Date.now();
-  const animate = () => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    container.alpha = progress;
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    } else if (onComplete) {
-      onComplete();
-    }
-  };
-  
-  requestAnimationFrame(animate);
+  return materialFadeIn(container, duration, onComplete);
 }
 
 /**
+ * @deprecated Use scaleTo from materialUI.js instead
  * Create a simple scale animation
  * @param {PIXI.Container} container - Container to animate
  * @param {number} targetScale - Target scale value
  * @param {number} duration - Animation duration in ms
  */
 export function scaleTo(container, targetScale = 1.1, duration = EFFECTS.animation.fast) {
-  const startScale = container.scale.x;
-  const startTime = Date.now();
-  
-  const animate = () => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    const currentScale = startScale + (targetScale - startScale) * progress;
-    container.scale.set(currentScale);
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    }
-  };
-  
-  requestAnimationFrame(animate);
+  return materialScaleTo(container, targetScale, duration);
 }
 
 // ==================== RESPONSIVE HELPERS ====================

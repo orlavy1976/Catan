@@ -13,6 +13,9 @@ import {
   withOpacity
 } from "../../config/materialDesign.js";
 
+// Import unified animation system
+import { animateScale, animateButtonPress } from "../../utils/materialUI.js";
+
 /**
  * Create a Material Design button
  * @param {string} label - Button text
@@ -212,40 +215,6 @@ export function createMaterialButton(label, options = {}) {
     }
   }
   
-  // Animate scale with easing
-  function animateScale(targetScale, duration = MATERIAL_MOTION.duration.fast) {
-    if (!container) return; // Safety check
-    
-    if (animationTween) {
-      cancelAnimationFrame(animationTween);
-      animationTween = null;
-    }
-    
-    const startScale = container.scale.x;
-    const startTime = Date.now();
-    
-    function animate() {
-      if (!container || !container.scale) return; // Additional safety check
-      
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Cubic ease-out
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const currentScale = startScale + (targetScale - startScale) * eased;
-      
-      container.scale.set(currentScale);
-      
-      if (progress < 1) {
-        animationTween = requestAnimationFrame(animate);
-      } else {
-        animationTween = null;
-      }
-    }
-    
-    animate();
-  }
-  
   // Create ripple effect
   function createRipple(localPoint) {
     const ripple = new PIXI.Graphics();
@@ -298,11 +267,11 @@ export function createMaterialButton(label, options = {}) {
     
     // Scale animation
     if (newState === 'hover') {
-      animateScale(MATERIAL_MOTION.hover.scale, MATERIAL_MOTION.hover.duration);
+      animateScale(container, MATERIAL_MOTION.hover.scale, MATERIAL_MOTION.hover.duration);
     } else if (newState === 'pressed') {
-      animateScale(MATERIAL_MOTION.press.scale, MATERIAL_MOTION.press.duration);
+      animateScale(container, MATERIAL_MOTION.press.scale, MATERIAL_MOTION.press.duration);
     } else {
-      animateScale(1, MATERIAL_MOTION.duration.normal);
+      animateScale(container, 1, MATERIAL_MOTION.duration.normal);
     }
   }
   
@@ -408,4 +377,202 @@ export function createIconButton(icon, options = {}) {
     width: MATERIAL_BUTTONS.sizes.small.height, // Square
     ...options,
   });
+}
+
+// =============================================================================
+// UNIFIED BUTTON FACTORY - Consolidates all button types across the codebase
+// =============================================================================
+
+/**
+ * Create a legacy-style big button (replaces makeBigButton across files)
+ * @param {string} label - Button text
+ * @param {function} onClick - Click handler
+ * @param {object} options - Additional options
+ * @returns {object} Button API with legacy compatibility
+ */
+export function createBigButton(label, onClick, options = {}) {
+  const button = createMaterialButton(label, {
+    variant: 'filled',
+    size: 'medium',
+    width: 140,
+    ...options
+  });
+  
+  if (onClick) {
+    button.onClick(onClick);
+  }
+  
+  // Legacy compatibility - return container directly for old code
+  const result = button.container;
+  result.width = button.width;
+  result.height = button.height;
+  result.button = button; // Access to full API if needed
+  
+  return result;
+}
+
+/**
+ * Create a legacy-style mini button (replaces makeMiniButton)
+ * @param {string} label - Button text  
+ * @param {function} onClick - Click handler
+ * @param {object} options - Additional options
+ * @returns {PIXI.Container} Button container
+ */
+export function createMiniButton(label, onClick, options = {}) {
+  const button = createMaterialButton(label, {
+    variant: 'filled',
+    size: 'small',
+    width: 32,
+    ...options
+  });
+  
+  if (onClick) {
+    button.onClick(onClick);
+  }
+  
+  const result = button.container;
+  result.width = button.width;
+  result.height = button.height;
+  result.button = button;
+  
+  return result;
+}
+
+/**
+ * Create a legacy-style small button (replaces createSmallButton)
+ * @param {string} label - Button text
+ * @param {function} onClick - Click handler
+ * @param {object} options - Additional options
+ * @returns {PIXI.Container} Button container
+ */
+export function createSmallButton(label, onClick, options = {}) {
+  const button = createMaterialButton(label, {
+    variant: 'filled',
+    size: 'small',
+    width: options.width || 15,
+    ...options
+  });
+  
+  if (onClick) {
+    button.onClick(onClick);
+  }
+  
+  const result = button.container;
+  result.width = button.width;
+  result.height = button.height; 
+  result.button = button;
+  
+  return result;
+}
+
+/**
+ * Create a chip-style button (replaces makeChip)
+ * @param {string} label - Chip text
+ * @param {function} onClick - Click handler
+ * @param {object} options - Additional options
+ * @returns {object} Chip API with legacy compatibility
+ */
+export function createChip(label, onClick, options = {}) {
+  const button = createMaterialButton(label, {
+    variant: 'outlined',
+    size: 'small',
+    width: options.width || 88,
+    ...options
+  });
+  
+  if (onClick) {
+    button.onClick(onClick);
+  }
+  
+  // Legacy compatibility - return object with container property
+  return {
+    container: button.container,
+    width: button.width,
+    height: button.height,
+    button: button
+  };
+}
+
+/**
+ * Create a resource selection chip (replaces createResourceChip)
+ * @param {string} resource - Resource type
+ * @param {function} onClick - Click handler  
+ * @param {object} options - Additional options
+ * @returns {PIXI.Container} Resource chip container
+ */
+export function createResourceChip(resource, onClick, options = {}) {
+  const button = createMaterialButton(resource, {
+    variant: 'outlined',
+    size: 'small',
+    width: options.width || 80,
+    ...options
+  });
+  
+  if (onClick) {
+    button.onClick(onClick);
+  }
+  
+  const result = button.container;
+  result.width = button.width;
+  result.height = button.height;
+  result.button = button;
+  
+  return result;
+}
+
+/**
+ * Create a player trade button (replaces createPlayerTradeButton)
+ * @param {object} player - Player object
+ * @param {function} onClick - Click handler
+ * @param {object} options - Additional options  
+ * @returns {PIXI.Container} Player button container
+ */
+export function createPlayerTradeButton(player, onClick, options = {}) {
+  const button = createMaterialButton(`Player ${player.id}`, {
+    variant: 'outlined',
+    size: 'large',
+    width: options.width || 300,
+    ...options
+  });
+  
+  if (onClick) {
+    button.onClick(onClick);
+  }
+  
+  const result = button.container;
+  result.width = button.width;
+  result.height = button.height;
+  result.button = button;
+  
+  return result;
+}
+
+/**
+ * Legacy makeButton compatibility function
+ * @param {string} label - Button text
+ * @param {number} width - Button width
+ * @param {string} variant - Button variant ('primary' or 'secondary')
+ * @returns {object} Button API with legacy compatibility
+ */
+export function makeButton(label, width = 120, variant = 'primary') {
+  const materialVariant = variant === 'primary' ? 'filled' : 'outlined';
+  
+  const button = createMaterialButton(label, {
+    variant: materialVariant,
+    size: 'medium',
+    width: width,
+  });
+  
+  // Legacy API compatibility
+  const result = {
+    container: button.container,
+    width: button.width,
+    height: button.height,
+    setEnabled: button.setEnabled,
+    onClick: button.onClick,
+    updateStyle: () => {}, // No-op for legacy compatibility
+    button: button // Access to full API
+  };
+  
+  return result;
 }

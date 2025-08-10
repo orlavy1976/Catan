@@ -1,5 +1,6 @@
 // Victory handling: check and show winner overlay
 import { WIN_POINTS } from "./score.js";
+import { createBigButton } from "../catan/ui/materialButton.js";
 
 let _victoryShown = false;
 
@@ -63,7 +64,7 @@ function showVictoryOverlay(app, playerNumber, points) {
   });
   tip.x = 24; tip.y = 112; panel.addChild(tip);
 
-  const ok = makeButton("OK", () => { /* משאירים את המסך — משחק הסתיים */ });
+  const ok = createBigButton("OK", () => { /* משאירים את המסך — משחק הסתיים */ });
   ok.x = 520 - 110 - 20; ok.y = 240 - 36 - 20;
   panel.addChild(ok);
 
@@ -73,17 +74,4 @@ function showVictoryOverlay(app, playerNumber, points) {
   app.stage.addChild(overlay);
 }
 
-function makeButton(label, onClick) {
-  const c = new PIXI.Container();
-  const g = new PIXI.Graphics();
-  g.beginFill(0x2563eb, 1).drawRoundedRect(0, 0, 110, 36, 8).endFill();
-  g.lineStyle({ width: 1, color: 0xffffff, alpha: 0.25 }).drawRoundedRect(0, 0, 110, 36, 8);
-  c.addChild(g);
 
-  const t = new PIXI.Text(label, { fontFamily: "Arial", fontSize: 14, fill: 0xffffff });
-  t.x = 12; t.y = 8; c.addChild(t);
-
-  c.eventMode = "static"; c.cursor = "pointer";
-  c.on("pointertap", onClick);
-  return c;
-}

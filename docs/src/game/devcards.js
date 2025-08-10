@@ -1,5 +1,16 @@
 // Development cards: buy, reveal, play
 // Deck: Knight×14, VP×5, Year of Plenty×2, Monopoly×2, Road Building×2
+import { createBigButton, createChip } from "../catan/ui/materialButton.js";
+import { 
+  showMaterialChoiceDialog, 
+  showMaterialConfirmDialog 
+} from "../utils/materialDialog.js";
+import { 
+  showPlayDevCardDialog,
+  showMonopolyDialog, 
+  showYearOfPlentyDialog 
+} from "./dialogs/devcards.js";
+
 const DECK_DEF = [
   ...Array(14).fill("knight"),
   ...Array(5).fill("vp"),
@@ -53,110 +64,10 @@ export function startBuyDevCard({ app, hud, state, resPanel }) {
 }
 
 /* =========================
-   PLAY DEV – main entry
+   PLAY DEV – main entry (Using Material Design)
    ========================= */
 export function startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder }) {
-  if (state.phase !== "play") return;
-
-  const me = state.players[state.currentPlayer - 1];
-  const playable = playableDevCounts(me); // לא כולל VP ולא כולל קלפים שנקנו בתור הזה
-  const totalPlayable = Object.values(playable).reduce((a,b)=>a+b,0);
-  if (totalPlayable === 0) { hud.showResult("No development cards available to play."); return; }
-
-  // UI: בחירת סוג קלף לשחק
-  const overlay = new PIXI.Container(); overlay.zIndex = 10000;
-  const dim = new PIXI.Graphics(); dim.beginFill(0x000000, 0.5).drawRect(0,0,app.renderer.width, app.renderer.height).endFill();
-  overlay.addChild(dim);
-
-  const panel = new PIXI.Container(); overlay.addChild(panel);
-  const bg = new PIXI.Graphics();
-  bg.beginFill(0x1f2937, 0.96).drawRoundedRect(0,0,560,340,16).endFill();
-  bg.lineStyle({ width:2, color:0xffffff, alpha:0.18 }).drawRoundedRect(0,0,560,340,16);
-  panel.addChild(bg);
-
-  const title = new PIXI.Text("Play Development Card", { fontFamily:"Georgia, serif", fontSize:22, fill:0xffffff });
-  title.x = 20; title.y = 14; panel.addChild(title);
-
-  const list = [
-    ["knight","Knight"],
-    ["road_building","Road Building"],
-    ["year_of_plenty","Year of Plenty"],
-    ["monopoly","Monopoly"],
-  ];
-  let picked = null;
-
-  let y = 58;
-  list.forEach(([key, label]) => {
-    const qty = playable[key] || 0;
-    const row = new PIXI.Container(); panel.addChild(row);
-    const cardFace = drawDevCardFace(key); cardFace.x = 20; cardFace.y = y; row.addChild(cardFace);
-
-    const name = new PIXI.Text(`${label}  ${qty>0?`(x${qty})`:"(—)"}`, { fontFamily:"Georgia, serif", fontSize:18, fill:0xffffaa });
-    name.x = 132; name.y = y+6; row.addChild(name);
-
-    const desc = new PIXI.Text(prettyDesc(key), { fontFamily:"Arial", fontSize:13, fill:0xdddddd, wordWrap:true, wordWrapWidth:360 });
-    desc.x = 132; desc.y = y+32; row.addChild(desc);
-
-    const btn = makeBigButton("Use", () => { if (qty>0){ setPicked(key); } });
-    btn.x = 460; btn.y = y+24; row.addChild(btn);
-
-    if (qty === 0) btn.alpha = 0.4;
-
-    y += 70;
-  });
-
-  const useBtn = makeBigButton("Play", () => {
-    if (!picked) return;
-    // צריכה מיידית של הקלף
-    me.dev[picked]--;
-    close();
-
-    switch (picked) {
-      case "knight":
-        playKnight({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout });
-        break;
-      case "road_building":
-        playRoadBuilding({ app, hud, state, boardC, graph, builder });
-        break;
-      case "year_of_plenty":
-        playYearOfPlenty({ app, hud, state, resPanel });
-        break;
-      case "monopoly":
-        playMonopoly({ app, hud, state, resPanel });
-        break;
-    }
-  });
-  useBtn.x = 320; useBtn.y = 294; panel.addChild(useBtn);
-
-  const cancel = makeBigButton("Cancel", () => close());
-  cancel.x = 200; cancel.y = 294; panel.addChild(cancel);
-
-  function setPicked(k){ picked = k; hud.showResult(`Selected: ${pretty(k)}`); }
-  function close(){
-    app.stage.removeChild(overlay);
-    // השבת כפתורים
-    hud.setEndEnabled(true);
-    hud.setBuildRoadEnabled(true);
-    hud.setBuildSettlementEnabled(true);
-    hud.setBuildCityEnabled(true);
-    hud.setTradeEnabled(true);
-    hud.setBuyDevEnabled(true);
-    hud.setPlayDevEnabled(true);
-  }
-
-  panel.x = (app.renderer.width - 560) / 2;
-  panel.y = (app.renderer.height - 340) / 2;
-
-  // נטרל HUD בזמן הדיאלוג
-  hud.setEndEnabled(false);
-  hud.setBuildRoadEnabled(false);
-  hud.setBuildSettlementEnabled(false);
-  hud.setBuildCityEnabled(false);
-  hud.setTradeEnabled(false);
-  hud.setBuyDevEnabled(false);
-  hud.setPlayDevEnabled(false);
-
-  app.stage.addChild(overlay);
+  showPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder });
 }
 
 /* ====== Card effects ====== */
@@ -255,143 +166,27 @@ function playRoadBuilding({ app, hud, state, boardC, graph, builder }) {
 
 // Year of Plenty
 function playYearOfPlenty({ app, hud, state, resPanel }) {
-  const RES = ["brick","wood","wheat","sheep","ore"];
-  const overlay = new PIXI.Container(); overlay.zIndex = 10000;
-  const dim = new PIXI.Graphics(); dim.beginFill(0x000000, 0.5).drawRect(0,0,app.renderer.width, app.renderer.height).endFill();
-  overlay.addChild(dim);
-  const panel = new PIXI.Container(); overlay.addChild(panel);
-
-  const bg = new PIXI.Graphics();
-  bg.beginFill(0x1f2937, 0.96).drawRoundedRect(0,0,480,260,16).endFill();
-  bg.lineStyle({ width:2, color:0xffffff, alpha:0.18 }).drawRoundedRect(0,0,480,260,16);
-  panel.addChild(bg);
-
-  const title = new PIXI.Text("Year of Plenty — pick 2 resources", { fontFamily:"Georgia, serif", fontSize:20, fill:0xffffff });
-  title.x = 20; title.y = 14; panel.addChild(title);
-
-  let picks = [];
-  RES.forEach((k,i) => {
-    const c = makeChip(k, () => {
-      if (picks.length >= 2) return;
-      picks.push(k);
-      hud.showResult(`Picked: ${picks.join(", ")}`);
-    });
-    c.container.x = 20 + i*90; c.container.y = 80;
-    panel.addChild(c.container);
-  });
-
-  const confirm = makeBigButton("Confirm", () => {
-    if (picks.length < 2) { hud.showResult("Pick two resources."); return; }
-    const me = state.players[state.currentPlayer - 1];
-    picks.forEach(k => { me.resources[k] = (me.resources[k]||0)+1; });
-    resPanel?.updateResources?.(state.players);
-    close();
-    hud.showResult(`Year of Plenty: +1 ${picks[0]}, +1 ${picks[1]}`);
-  });
-  confirm.x = 340; confirm.y = 210; panel.addChild(confirm);
-
-  const cancel = makeBigButton("Cancel", () => { close(); });
-  cancel.x = 220; cancel.y = 210; panel.addChild(cancel);
-
-  function close(){ app.stage.removeChild(overlay); }
-  panel.x = (app.renderer.width - 480) / 2;
-  panel.y = (app.renderer.height - 260) / 2;
-  app.stage.addChild(overlay);
+  showYearOfPlentyDialog({ app, hud, state, resPanel });
 }
 
 // Monopoly
 function playMonopoly({ app, hud, state, resPanel }) {
-  const RES = ["brick","wood","wheat","sheep","ore"];
-  const overlay = new PIXI.Container(); overlay.zIndex = 10000;
-  const dim = new PIXI.Graphics(); dim.beginFill(0x000000, 0.5).drawRect(0,0,app.renderer.width, app.renderer.height).endFill();
-  overlay.addChild(dim);
-  const panel = new PIXI.Container(); overlay.addChild(panel);
-
-  const bg = new PIXI.Graphics();
-  bg.beginFill(0x1f2937, 0.96).drawRoundedRect(0,0,480,220,16).endFill();
-  bg.lineStyle({ width:2, color:0xffffff, alpha:0.18 }).drawRoundedRect(0,0,480,220,16);
-  panel.addChild(bg);
-
-  const title = new PIXI.Text("Monopoly — choose a resource", { fontFamily:"Georgia, serif", fontSize:20, fill:0xffffff });
-  title.x = 20; title.y = 14; panel.addChild(title);
-
-  let chosen = null;
-  RES.forEach((k,i) => {
-    const c = makeChip(k, () => { chosen = k; hud.showResult(`Monopoly: ${k}`); });
-    c.container.x = 20 + i*90; c.container.y = 80;
-    panel.addChild(c.container);
-  });
-
-  const confirm = makeBigButton("Confirm", () => {
-    if (!chosen) { hud.showResult("Pick a resource."); return; }
-    const meIdx = state.currentPlayer - 1;
-    const me = state.players[meIdx];
-    let taken = 0;
-    state.players.forEach((p,i) => {
-      if (i === meIdx) return;
-      const amt = p.resources[chosen] || 0;
-      if (amt > 0) {
-        p.resources[chosen] -= amt;
-        me.resources[chosen] = (me.resources[chosen]||0) + amt;
-        taken += amt;
-      }
-    });
-    resPanel?.updateResources?.(state.players);
-    close();
-    hud.showResult(`Monopoly: took ${taken} ${chosen} from others`);
-  });
-  confirm.x = 340; confirm.y = 170; panel.addChild(confirm);
-
-  const cancel = makeBigButton("Cancel", () => close());
-  cancel.x = 220; cancel.y = 170; panel.addChild(cancel);
-
-  function close(){ app.stage.removeChild(overlay); }
-  panel.x = (app.renderer.width - 480) / 2;
-  panel.y = (app.renderer.height - 220) / 2;
-  app.stage.addChild(overlay);
+  showMonopolyDialog({ app, hud, state, resPanel });
 }
 
 /* ========= Reveal overlay (buy) ========= */
 function showDevReveal({ app, card, onClose }) {
-  const overlay = new PIXI.Container();
-  overlay.zIndex = 10000;
-
-  const dim = new PIXI.Graphics();
-  dim.beginFill(0x000000, 0.55);
-  dim.drawRect(0, 0, app.renderer.width, app.renderer.height);
-  dim.endFill();
-  overlay.addChild(dim);
-
-  const panel = new PIXI.Container();
-  overlay.addChild(panel);
-
-  const bg = new PIXI.Graphics();
-  bg.beginFill(0x111827, 0.98);
-  bg.drawRoundedRect(0, 0, 420, 220, 16);
-  bg.endFill();
-  bg.lineStyle({ width: 2, color: 0xffffff, alpha: 0.15 });
-  bg.drawRoundedRect(0, 0, 420, 220, 16);
-  panel.addChild(bg);
-
-  const title = new PIXI.Text("Development Card", { fontFamily: "Georgia, serif", fontSize: 22, fill: 0xffffff });
-  title.x = 20; title.y = 16; panel.addChild(title);
-
-  const cardC = drawDevCardFace(card); cardC.x = 28; cardC.y = 60; panel.addChild(cardC);
-
-  const name = new PIXI.Text(pretty(card), { fontFamily: "Georgia, serif", fontSize: 20, fill: 0xffffaa });
-  name.x = 140; name.y = 70; panel.addChild(name);
-
-  const desc = new PIXI.Text(prettyDesc(card), { fontFamily: "Arial", fontSize: 14, fill: 0xdddddd, wordWrap: true, wordWrapWidth: 240 });
-  desc.x = 140; desc.y = 104; panel.addChild(desc);
-
-  const ok = makeBigButton("OK", () => close());
-  ok.x = 290; ok.y = 174; panel.addChild(ok);
-
-  panel.x = (app.renderer.width - 420) / 2;
-  panel.y = (app.renderer.height - 220) / 2;
-
-  function close(){ app.stage.removeChild(overlay); onClose?.(); }
-  app.stage.addChild(overlay);
+  const title = "Development Card";
+  const message = `You drew: ${pretty(card)}\n\n${prettyDesc(card)}`;
+  
+  showMaterialConfirmDialog(app, {
+    title,
+    message,
+    confirmText: "OK",
+    hideCancel: true,
+    onConfirm: () => onClose?.(),
+    onClose: () => onClose?.()
+  });
 }
 
 /* ========= Helpers & UI bits ========= */
@@ -444,24 +239,4 @@ function prettyDesc(k) {
   })[k] || "";
 }
 
-function makeBigButton(label, onClick) {
-  const c = new PIXI.Container();
-  const g = new PIXI.Graphics();
-  g.beginFill(0x2563eb, 1).drawRoundedRect(0, 0, 140, 36, 8).endFill();
-  g.lineStyle({ width: 1, color: 0xffffff, alpha: 0.25 }).drawRoundedRect(0, 0, 140, 36, 8);
-  c.addChild(g);
-  const t = new PIXI.Text(label, { fontFamily:"Arial", fontSize:14, fill:0xffffff }); t.x = 10; t.y = 8; c.addChild(t);
-  c.eventMode = "static"; c.cursor = "pointer"; c.on("pointertap", onClick);
-  return c;
-}
 
-function makeChip(label, onClick) {
-  const container = new PIXI.Container();
-  const g = new PIXI.Graphics();
-  g.beginFill(0xffffff, 0.12).drawRoundedRect(0,0,88,32,10).endFill();
-  g.lineStyle({ width: 1, color: 0xffffff, alpha: 0.35 }).drawRoundedRect(0,0,88,32,10);
-  container.addChild(g);
-  const t = new PIXI.Text(label, { fontFamily:"Arial", fontSize:14, fill:0xffffff }); t.x = 10; t.y = 8; container.addChild(t);
-  container.eventMode = "static"; container.cursor = "pointer"; container.on("pointertap", onClick);
-  return { container };
-}

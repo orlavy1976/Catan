@@ -298,6 +298,97 @@ export function createMaterialContainer(options = {}) {
 
 // ==================== ANIMATION HELPERS ====================
 
+// ==================== ANIMATION UTILITIES ====================
+
+/**
+ * Unified easing functions for consistent animations
+ */
+export const EASING = {
+  linear: (t) => t,
+  easeOut: (t) => 1 - Math.pow(1 - t, 2),
+  easeIn: (t) => t * t,
+  easeInOut: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+  easeOutCubic: (t) => 1 - Math.pow(1 - t, 3),
+  easeInCubic: (t) => t * t * t,
+  easeOutQuart: (t) => 1 - Math.pow(1 - t, 4),
+  easeInQuart: (t) => t * t * t * t,
+  // Material Design specific easing
+  standard: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+  decelerate: (t) => 1 - Math.pow(1 - t, 2),
+  accelerate: (t) => t * t,
+  emphasized: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+};
+
+/**
+ * Base animation function - all other animations build on this
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {object} properties - Properties to animate {scale: 1.2, alpha: 0.5, x: 100, y: 200}
+ * @param {number} duration - Animation duration in ms
+ * @param {string|function} easing - Easing function name or custom function
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function animate(target, properties, duration = MATERIAL_MOTION.duration.normal, easing = 'standard') {
+  return new Promise((resolve) => {
+    if (!target) {
+      console.warn('animate: target is undefined');
+      resolve();
+      return;
+    }
+    
+    // Get easing function
+    const easingFn = typeof easing === 'string' ? EASING[easing] || EASING.standard : easing;
+    
+    // Store initial values
+    const initialValues = {};
+    const targetValues = {};
+    
+    for (const prop in properties) {
+      if (prop === 'scale') {
+        initialValues.scale = target.scale ? target.scale.x : 1;
+        targetValues.scale = properties.scale;
+      } else if (target[prop] !== undefined) {
+        initialValues[prop] = target[prop];
+        targetValues[prop] = properties[prop];
+      }
+    }
+    
+    const startTime = Date.now();
+    let animationId = null;
+    
+    function animateFrame() {
+      // Safety check during animation
+      if (!target) {
+        if (animationId) cancelAnimationFrame(animationId);
+        resolve();
+        return;
+      }
+      
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easingFn(progress);
+      
+      // Apply animated values
+      for (const prop in targetValues) {
+        if (prop === 'scale' && target.scale) {
+          const currentScale = initialValues.scale + (targetValues.scale - initialValues.scale) * eased;
+          target.scale.set(currentScale);
+        } else if (target[prop] !== undefined) {
+          target[prop] = initialValues[prop] + (targetValues[prop] - initialValues[prop]) * eased;
+        }
+      }
+      
+      if (progress < 1) {
+        animationId = requestAnimationFrame(animateFrame);
+      } else {
+        animationId = null;
+        resolve();
+      }
+    }
+    
+    animateFrame();
+  });
+}
+
 /**
  * Create a smooth scale animation
  * @param {PIXI.DisplayObject} target - Object to animate
@@ -307,51 +398,7 @@ export function createMaterialContainer(options = {}) {
  * @returns {Promise} Promise that resolves when animation completes
  */
 export function animateScale(target, targetScale, duration = MATERIAL_MOTION.duration.normal, easing = 'standard') {
-  return new Promise((resolve) => {
-    if (!target || !target.scale) {
-      console.warn('animateScale: target or target.scale is undefined');
-      resolve();
-      return;
-    }
-    
-    const startScale = target.scale.x;
-    const startTime = Date.now();
-    let animationId = null;
-    
-    function animate() {
-      // Safety check during animation
-      if (!target || !target.scale) {
-        if (animationId) cancelAnimationFrame(animationId);
-        resolve();
-        return;
-      }
-      
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Apply easing
-      let eased = progress;
-      if (easing === 'decelerate') {
-        eased = 1 - Math.pow(1 - progress, 2);
-      } else if (easing === 'accelerate') {
-        eased = Math.pow(progress, 2);
-      } else if (easing === 'emphasized') {
-        eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-      }
-      
-      const currentScale = startScale + (targetScale - startScale) * eased;
-      target.scale.set(currentScale);
-      
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate);
-      } else {
-        animationId = null;
-        resolve();
-      }
-    }
-    
-    animate();
-  });
+  return animate(target, { scale: targetScale }, duration, easing);
 }
 
 /**
@@ -359,45 +406,11 @@ export function animateScale(target, targetScale, duration = MATERIAL_MOTION.dur
  * @param {PIXI.DisplayObject} target - Object to animate
  * @param {number} targetAlpha - Target alpha value
  * @param {number} duration - Animation duration in ms
+ * @param {string} easing - Easing function name
  * @returns {Promise} Promise that resolves when animation completes
  */
-export function animateFade(target, targetAlpha, duration = MATERIAL_MOTION.duration.normal) {
-  return new Promise((resolve) => {
-    if (!target || target.alpha === undefined) {
-      console.warn('animateFade: target or target.alpha is undefined');
-      resolve();
-      return;
-    }
-    
-    const startAlpha = target.alpha;
-    const startTime = Date.now();
-    let animationId = null;
-    
-    function animate() {
-      // Safety check during animation
-      if (!target || target.alpha === undefined) {
-        if (animationId) cancelAnimationFrame(animationId);
-        resolve();
-        return;
-      }
-      
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Ease-out
-      const eased = 1 - Math.pow(1 - progress, 2);
-      target.alpha = startAlpha + (targetAlpha - startAlpha) * eased;
-      
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate);
-      } else {
-        animationId = null;
-        resolve();
-      }
-    }
-    
-    animate();
-  });
+export function animateFade(target, targetAlpha, duration = MATERIAL_MOTION.duration.normal, easing = 'easeOut') {
+  return animate(target, { alpha: targetAlpha }, duration, easing);
 }
 
 /**
@@ -405,37 +418,122 @@ export function animateFade(target, targetAlpha, duration = MATERIAL_MOTION.dura
  * @param {PIXI.DisplayObject} target - Object to animate
  * @param {object} targetPosition - Target position {x, y}
  * @param {number} duration - Animation duration in ms
+ * @param {string} easing - Easing function name
  * @returns {Promise} Promise that resolves when animation completes
  */
-export function animateSlide(target, targetPosition, duration = MATERIAL_MOTION.duration.normal) {
-  return new Promise((resolve) => {
-    const startX = target.x;
-    const startY = target.y;
-    const startTime = Date.now();
-    let animationId = null;
-    
-    function animate() {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Emphasized easing for slide
-      const eased = progress < 0.5 ? 
-        2 * progress * progress : 
-        1 - Math.pow(-2 * progress + 2, 2) / 2;
-      
-      target.x = startX + (targetPosition.x - startX) * eased;
-      target.y = startY + (targetPosition.y - startY) * eased;
-      
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate);
-      } else {
-        animationId = null;
-        resolve();
-      }
-    }
-    
-    animate();
+export function animateSlide(target, targetPosition, duration = MATERIAL_MOTION.duration.normal, easing = 'emphasized') {
+  return animate(target, targetPosition, duration, easing);
+}
+
+/**
+ * Fade in animation (from alpha 0 to 1)
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {number} duration - Animation duration in ms
+ * @param {function} onComplete - Callback when animation completes
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function fadeIn(target, duration = MATERIAL_MOTION.duration.normal, onComplete = null) {
+  if (target) target.alpha = 0;
+  return animateFade(target, 1, duration).then(() => {
+    onComplete?.();
   });
+}
+
+/**
+ * Fade out animation (from current alpha to 0)
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {number} duration - Animation duration in ms
+ * @param {function} onComplete - Callback when animation completes
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function fadeOut(target, duration = MATERIAL_MOTION.duration.normal, onComplete = null) {
+  return animateFade(target, 0, duration).then(() => {
+    onComplete?.();
+  });
+}
+
+/**
+ * Scale animation with bounce back effect
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {number} targetScale - Target scale value
+ * @param {number} duration - Animation duration in ms
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function scaleTo(target, targetScale = 1.1, duration = MATERIAL_MOTION.duration.fast) {
+  return animateScale(target, targetScale, duration, 'easeOut');
+}
+
+/**
+ * Animate to specific Y position
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {number} targetY - Target Y position
+ * @param {number} duration - Animation duration in ms
+ * @param {string} easing - Easing function name
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function animateToY(target, targetY, duration = MATERIAL_MOTION.duration.normal, easing = 'easeOutCubic') {
+  return animate(target, { y: targetY }, duration, easing);
+}
+
+/**
+ * Combined scale and fade animation for dialog entrances
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {object} options - Animation options
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function animateDialogEntrance(target, options = {}) {
+  const {
+    fromScale = 0.8,
+    toScale = 1,
+    fromAlpha = 0,
+    toAlpha = 1,
+    duration = MATERIAL_MOTION.duration.normal,
+    easing = 'emphasized'
+  } = options;
+  
+  if (target.scale) target.scale.set(fromScale);
+  target.alpha = fromAlpha;
+  
+  return animate(target, {
+    scale: toScale,
+    alpha: toAlpha
+  }, duration, easing);
+}
+
+/**
+ * Combined scale and fade animation for dialog exits
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {object} options - Animation options
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function animateDialogExit(target, options = {}) {
+  const {
+    toScale = 0.8,
+    toAlpha = 0,
+    duration = MATERIAL_MOTION.duration.fast,
+    easing = 'accelerate'
+  } = options;
+  
+  return animate(target, {
+    scale: toScale,
+    alpha: toAlpha
+  }, duration, easing);
+}
+
+/**
+ * Button press animation (scale down then up)
+ * @param {PIXI.DisplayObject} target - Object to animate
+ * @param {object} options - Animation options
+ * @returns {Promise} Promise that resolves when animation completes
+ */
+export function animateButtonPress(target, options = {}) {
+  const {
+    pressScale = 0.95,
+    duration = MATERIAL_MOTION.duration.fast
+  } = options;
+  
+  return animateScale(target, pressScale, duration / 2, 'easeIn')
+    .then(() => animateScale(target, 1, duration / 2, 'easeOut'));
 }
 
 // ==================== COLOR HELPERS ====================

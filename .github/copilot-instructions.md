@@ -1,14 +1,15 @@
 # Copilot Instructions for Catan Board Game
 
 ## Project Overview
-This is a browser-based **Catan board game** clone implemented in **vanilla JavaScript, HTML, and CSS**, using **PixiJS** for rendering and game UI. The code is modular, with separate files for board generation, UI, game state, and logic.
+This is a browser-based **Catan board game** clone implemented in **vanilla JavaScript, HTML, and CSS**, using **PixiJS** for rendering and game UI. The code is modular, with separate files for board generation, UI, game state, and logic. The project has been refactored to use a **unified Material Design system** for consistent UI components and interactions.
 
 ## Current Features
 - **Board Rendering**: Hex tile board with randomized resource placement and token distribution, validation prevents adjacent 6 and 8 tokens, ports (harbors) placed according to official map
 - **Gameplay**: Turn-based flow, robber movement, building system (roads, settlements, cities), trading (bank and player-to-player)
-- **Development Cards**: Knight, Road Building, Year of Plenty, Victory Point cards
+- **Development Cards**: Knight, Road Building, Year of Plenty, Monopoly, Victory Point cards with Material Design dialogs
 - **Scoring**: Automatic calculation including Largest Army and Longest Road, win condition at 10 points
-- **UI**: HUD with action buttons, resource panel, score panel, dice roll animation
+- **Material Design UI**: Unified animation system, consistent button styling, modern dialog components
+- **Trading System**: Both bank/port trading and player-to-player trading with full resource management
 
 ## Architecture & Code Organization
 
@@ -26,17 +27,34 @@ docs/src/
 │   ├── graph.js        # Vertex/edge graph for building
 │   ├── ui.js           # Main UI components
 │   └── build/          # Building placement system
+│       └── ui/
+│           └── materialButton.js  # Unified button system
 ├── game/               # Game logic and mechanics
 │   ├── stateStore.js   # State management utilities
 │   ├── resources.js    # Resource distribution
 │   ├── turns.js        # Turn management
+│   ├── trade.js        # Trading system (migrated to Material Design)
+│   ├── devcards.js     # Development cards (migrated to Material Design)
 │   ├── devcards/       # Development card system
-│   └── [feature].js   # Individual game features
+│   └── dialogs/        # Modern Material Design dialogs
+│       ├── materialTrade.js  # Trade dialogs
+│       └── devcards.js       # Dev card dialogs
 ├── config/
-│   └── constants.js    # Game constants and configuration
+│   ├── constants.js    # Game constants and configuration
+│   └── materialDesign.js  # Material Design color palette and tokens
 └── utils/
-    └── geom.js         # Geometric utilities for hex grid
+    ├── geom.js         # Geometric utilities for hex grid
+    ├── materialUI.js   # Material Design animation and UI utilities
+    └── materialDialog.js  # Material Design dialog system
 ```
+
+### Material Design System
+The project now uses a unified **Material Design system** for all UI components:
+
+- **`utils/materialUI.js`**: Core animation library with easing functions, fade/scale/slide animations
+- **`utils/materialDialog.js`**: Material Design dialog components (alert, confirm, choice, form)
+- **`catan/ui/materialButton.js`**: Unified button factory with consistent styling and animations
+- **`config/materialDesign.js`**: Material Design color palette, typography, spacing, and motion tokens
 
 ### State Management
 - **Central state**: All game data stored in `state.js` object
@@ -65,19 +83,50 @@ patch({ currentPlayer: nextPlayerId });
 - **Consistent file naming**: camelCase for files, kebab-case for directories when needed
 - **Comments in Hebrew are acceptable** (existing codebase has mixed Hebrew/English)
 
+### Material Design System Usage
+- **Always use Material Design components** for new UI elements
+- **Import from unified systems**: Use `materialButton.js`, `materialDialog.js`, `materialUI.js`
+- **Follow Material Design principles**: Consistent elevation, color usage, animations
+- **Use animation helpers**: `animateScale()`, `animateFade()`, `animateSlide()` from `materialUI.js`
+
+```javascript
+// Example Material Design usage
+import { createMaterialButton } from "../catan/ui/materialButton.js";
+import { createMaterialConfirm } from "../utils/materialDialog.js";
+import { animateScale } from "../utils/materialUI.js";
+
+// Create consistent buttons
+const button = createMaterialButton("Click Me", {
+  variant: 'filled',
+  size: 'large',
+  onClick: () => console.log('clicked')
+});
+
+// Use unified dialogs
+createMaterialConfirm(app, {
+  title: "Confirm Action",
+  message: "Are you sure?",
+  onConfirm: () => performAction()
+});
+```
+
 ### PixiJS Rendering
 - All rendering done via **PixiJS containers and graphics**
 - **Separate rendering from game logic** where possible
 - Use **container hierarchies** for organized scene graph
 - **Store sprite references** for updates (e.g., `robberSpriteRef`, `tileSprites`)
+- **Use Material Design animations** for smooth transitions
 
 ```javascript
-// Example PixiJS pattern
+// Example PixiJS pattern with Material Design
 const container = new PIXI.Container();
 const graphics = new PIXI.Graphics();
-graphics.beginFill(color);
+graphics.beginFill(MATERIAL_COLORS.primary[500]);
 graphics.drawCircle(0, 0, radius);
 container.addChild(graphics);
+
+// Animate with Material Design timing
+animateScale(container, 1.2, MATERIAL_MOTION.duration.normal);
 ```
 
 ### Module Organization
@@ -85,12 +134,35 @@ container.addChild(graphics);
 - **Export clear public APIs** from each module
 - **Keep related functionality together** (e.g., all dev card logic in `devcards/`)
 - **Use index.js files** for clean imports from directories
+- **Prefer Material Design dialogs** over inline dialog code
+
+### Dialog System Guidelines
+- **Always use Material Design dialogs** for new features
+- **Migrate inline dialogs** to Material Design system when modifying existing code
+- **Use appropriate dialog types**: Alert, Confirm, Choice, Form, or custom dialogs
+- **Handle HUD state properly** with disable/enable functions
+
+```javascript
+// Preferred dialog pattern
+import { createMaterialChoice } from "../utils/materialDialog.js";
+
+function showOptionsMenu(app, options) {
+  createMaterialChoice(app, {
+    title: "Choose Option",
+    choices: options.map(opt => ({
+      label: opt.name,
+      action: opt.callback
+    }))
+  });
+}
+```
 
 ### State and Data Flow
 - **Immutable-style updates** where possible
 - **Validate inputs** before state changes
 - **Emit events** for UI updates after state changes
 - **Keep UI reactive** to state changes via subscriptions
+- **Use Material Design feedback** for user actions
 
 ### Game Logic Patterns
 - **Separate phases** for different game modes (`setup`, `play`, `move-robber`, etc.)
@@ -126,12 +198,20 @@ function canBuildRoad(player, edge) {
 - **`game/turns.js`**: Turn management and phase transitions
 - **`game/robber.js`**: Robber movement and resource stealing
 - **`game/build*.js`**: Building placement (roads, settlements, cities)
-- **`game/trade.js`**: Trading system (bank and player-to-player)
+- **`game/trade.js`**: Trading system (migrated to Material Design dialogs)
 
 ### Development Cards
+- **`game/devcards.js`**: Dev card main functions (migrated to Material Design)
 - **`game/devcards/index.js`**: Dev card deck management and purchase
 - **`game/devcards/effects/`**: Individual card implementations
-- **`game/devcards/ui.js`**: Dev card UI components
+- **`game/dialogs/devcards.js`**: Material Design dev card dialogs
+
+### Material Design System
+- **`utils/materialUI.js`**: Core animation system and UI utilities
+- **`utils/materialDialog.js`**: Dialog system (alert, confirm, choice, form)
+- **`catan/ui/materialButton.js`**: Unified button factory with all variants
+- **`game/dialogs/materialTrade.js`**: Modern trade dialog system
+- **`config/materialDesign.js`**: Design tokens, colors, typography, spacing
 
 ## How to Assist with This Codebase
 
@@ -149,10 +229,18 @@ function canBuildRoad(player, edge) {
 4. **Test integration** with other systems
 
 ### UI Development
-1. **Use PixiJS containers** for all visual elements
-2. **Follow existing button/panel patterns** from `catan/ui/`
-3. **Make UI responsive** to state changes
-4. **Maintain consistent styling** with existing components
+1. **Use Material Design components** for all new UI elements
+2. **Import from unified systems**: `materialButton.js`, `materialDialog.js`, `materialUI.js`
+3. **Follow existing patterns** from migrated components
+4. **Make UI responsive** to state changes
+5. **Use consistent animations** from the Material Design system
+
+### Dialog Development
+1. **Always use Material Design dialogs** for new features
+2. **Use appropriate dialog types**: `createMaterialAlert`, `createMaterialConfirm`, `createMaterialChoice`, `createMaterialForm`
+3. **Handle HUD state properly** with disable/enable functions
+4. **Migrate inline dialogs** when modifying existing code
+5. **Follow Material Design principles** for spacing and layout
 
 ### Game Rule Implementation
 1. **Follow official Settlers of Catan rules** unless instructed otherwise
@@ -229,19 +317,21 @@ function startBuildingPlacement(buildingType) {
 ## Upcoming Features / Areas for Development
 
 ### High Priority
-- **Monopoly development card implementation**
+- **Enhanced player trade system**: Add trade offer negotiation and approval flow
 - **Improved AI for bot players**
-- **Building and robber movement animations**
+- **Building and robber movement animations using Material Design motion**
 
 ### Medium Priority  
-- **UI polish and mobile responsiveness**
+- **Mobile responsiveness** with Material Design touch targets
 - **Game save/load functionality**
 - **Sound effects and music**
+- **Enhanced Material Design theming**
 
 ### Low Priority
 - **Multiplayer networking**
 - **Custom rule variants**
 - **Statistics tracking**
+- **Advanced Material Design components**
 
 ## Testing and Debugging
 

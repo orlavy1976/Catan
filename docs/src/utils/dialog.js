@@ -400,57 +400,30 @@ export function createResourceDialog(app, options = {}) {
 }
 
 // ==================== ANIMATION HELPERS ====================
+// Using unified animation system from materialUI.js
+
+import { fadeOut as materialFadeOut, animateToY as materialAnimateToY } from './materialUI.js';
 
 /**
+ * @deprecated Use fadeOut from materialUI.js instead
  * Fade out animation
  * @param {PIXI.Container} container - Container to animate
  * @param {number} duration - Animation duration
  * @param {function} onComplete - Completion callback
  */
 function fadeOut(container, duration = EFFECTS.animation.normal, onComplete = null) {
-  const startTime = Date.now();
-  const startAlpha = container.alpha;
-  
-  const animate = () => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    container.alpha = startAlpha * (1 - progress);
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    } else {
-      onComplete?.();
-    }
-  };
-  
-  requestAnimationFrame(animate);
+  return materialFadeOut(container, duration, onComplete);
 }
 
 /**
+ * @deprecated Use animateToY from materialUI.js instead
  * Animate to Y position
  * @param {PIXI.Container} container - Container to animate
  * @param {number} targetY - Target Y position
  * @param {number} duration - Animation duration
  */
 function animateToY(container, targetY, duration = EFFECTS.animation.normal) {
-  const startTime = Date.now();
-  const startY = container.y;
-  
-  const animate = () => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    // Ease out cubic
-    const eased = 1 - Math.pow(1 - progress, 3);
-    container.y = startY + (targetY - startY) * eased;
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    }
-  };
-  
-  requestAnimationFrame(animate);
+  return materialAnimateToY(container, targetY, duration);
 }
 
 // ==================== RESOURCE CHIP HELPER ====================
@@ -503,4 +476,64 @@ function createResourceChip(resource, onClick) {
   container.on("pointertap", onClick);
   
   return container;
+}
+
+// ==================== MATERIAL DESIGN INTEGRATION ====================
+// Enhanced dialog functions that use Material Design when available
+
+/**
+ * Enhanced choice dialog that prefers Material Design
+ * @param {PIXI.Application} app - PixiJS application
+ * @param {object} options - Dialog options
+ * @returns {object} Dialog instance
+ */
+export function createEnhancedChoiceDialog(app, options = {}) {
+  // Try to use Material Design if available
+  try {
+    const { createMaterialChoice } = require('./materialDialog.js');
+    
+    console.warn('⚠️ DEPRECATION: Using legacy createChoiceDialog. Consider migrating to createMaterialChoice for better UX.');
+    
+    const config = {
+      title: options.title || 'Choose',
+      message: options.subtitle || '',
+      choices: options.choices || [],
+      onChoice: options.onChoice,
+      onCancel: options.onCancel,
+      ...options
+    };
+
+    return createMaterialChoice(app, config);
+  } catch (error) {
+    // Fallback to legacy implementation
+    return createChoiceDialog(app, options);
+  }
+}
+
+/**
+ * Enhanced confirm dialog that prefers Material Design
+ * @param {PIXI.Application} app - PixiJS application
+ * @param {object} options - Dialog options
+ * @returns {object} Dialog instance
+ */
+export function createEnhancedConfirmDialog(app, options = {}) {
+  try {
+    const { createMaterialConfirm } = require('./materialDialog.js');
+    
+    console.warn('⚠️ DEPRECATION: Using legacy createConfirmDialog. Consider migrating to createMaterialConfirm for better UX.');
+    
+    const config = {
+      title: options.title || 'Confirm',
+      message: options.message || '',
+      confirmText: options.yesText || 'Yes',
+      cancelText: options.noText || 'No',
+      onConfirm: options.onConfirm,
+      onCancel: options.onCancel,
+      ...options
+    };
+
+    return createMaterialConfirm(app, config);
+  } catch (error) {
+    return createConfirmDialog(app, options);
+  }
 }

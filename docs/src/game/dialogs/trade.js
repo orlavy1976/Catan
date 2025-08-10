@@ -1,6 +1,11 @@
-import { createDialog, createChoiceDialog, DIALOG_TYPES } from '../../utils/dialog.js';
-import { createStyledText } from '../../utils/ui.js';
-import { makeButton } from '../../catan/ui/button.js';
+import { 
+  createMaterialDialog, 
+  createMaterialChoice, 
+  createMaterialConfirm, 
+  MATERIAL_DIALOG_TYPES 
+} from '../../utils/materialDialog.js';
+import { createMaterialButton } from '../../catan/ui/materialButton.js';
+import { createMaterialText } from '../../utils/materialUI.js';
 import { COLORS, SPACING } from '../../config/design.js';
 import { RES_KEYS } from '../../config/constants.js';
 
@@ -11,9 +16,9 @@ import { RES_KEYS } from '../../config/constants.js';
  * @param {object} deps - Dependencies (app, hud, state, resPanel, graph)
  */
 export function showTradeMenu({ app, hud, state, resPanel, graph }) {
-  const dialog = createChoiceDialog(app, {
+  const dialog = createMaterialChoice(app, {
     title: "Trade",
-    subtitle: "Choose your trading partner",
+    message: "Choose your trading partner",
     choices: [
       { label: "Trade with Bank", value: "bank" },
       { label: "Trade with Player", value: "player" }
@@ -66,12 +71,13 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
 
   if (tradeOptions.length === 0) {
     // No trades available
-    const dialog = createDialog(app, {
+    const dialog = createMaterialDialog(app, {
       title: "Bank Trade",
-      subtitle: "No trades available",
-      type: DIALOG_TYPES.SMALL,
+      type: MATERIAL_DIALOG_TYPES.SMALL,
       onClose: () => enableHUD(hud)
     });
+    
+    dialog.addContent(createMaterialText("No trades available", 'bodyLarge'));
 
     const messageText = createStyledText(
       "You don't have enough resources for any bank trades.",

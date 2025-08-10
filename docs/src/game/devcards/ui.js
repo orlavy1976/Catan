@@ -1,4 +1,5 @@
 // UI helpers + labels shared by dev-cards
+import { createBigButton, createChip } from "../../catan/ui/materialButton.js";
 
 export function drawDevCardFace(cardKey) {
   const c = new PIXI.Container();
@@ -40,24 +41,11 @@ export function prettyDesc(k) {
   })[k] || "";
 }
 
+// Legacy wrapper functions for backward compatibility
 export function makeBigButton(label, onClick) {
-  const c = new PIXI.Container();
-  const g = new PIXI.Graphics();
-  g.beginFill(0x2563eb, 1).drawRoundedRect(0, 0, 140, 36, 8).endFill();
-  g.lineStyle({ width: 1, color: 0xffffff, alpha: 0.25 }).drawRoundedRect(0, 0, 140, 36, 8);
-  c.addChild(g);
-  const t = new PIXI.Text(label, { fontFamily:"Arial", fontSize:14, fill:0xffffff }); t.x = 10; t.y = 8; c.addChild(t);
-  c.eventMode = "static"; c.cursor = "pointer"; c.on("pointertap", onClick);
-  return c;
+  return createBigButton(label, onClick);
 }
 
 export function makeChip(label, onClick) {
-  const container = new PIXI.Container();
-  const g = new PIXI.Graphics();
-  g.beginFill(0xffffff, 0.12).drawRoundedRect(0,0,88,32,10).endFill();
-  g.lineStyle({ width: 1, color: 0xffffff, alpha: 0.35 }).drawRoundedRect(0,0,88,32,10);
-  container.addChild(g);
-  const t = new PIXI.Text(label, { fontFamily:"Arial", fontSize:14, fill: 0xffffff }); t.x = 10; t.y = 8; container.addChild(t);
-  container.eventMode = "static"; container.cursor = "pointer"; container.on("pointertap", onClick);
-  return { container };
+  return createChip(label, onClick);
 }
