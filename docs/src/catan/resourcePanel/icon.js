@@ -4,8 +4,8 @@ import {
   getResourceColor 
 } from "../../config/design.js";
 import { 
-  createStyledText 
-} from "../../utils/ui.js";
+  createMaterialText 
+} from "../../utils/materialUI.js";
 
 const RES_LABELS = {
   brick: "Brick",
@@ -38,7 +38,7 @@ export function makeResIcon(kind) {
   container.addChild(icon);
 
   // Resource letter - using design system
-  const letter = createStyledText(
+  const letter = createMaterialText(
     (RES_LABELS[kind] ?? "?")[0], 
     'bodySmall', 
     { 
@@ -53,7 +53,7 @@ export function makeResIcon(kind) {
   container.addChild(letter);
 
   // Resource count - using design system
-  const countText = createStyledText("0", 'counter');
+  const countText = createMaterialText("0", 'counter');
   countText.x = DIMENSIONS.resourceIcon.width + 4; 
   countText.y = 0;
   container.addChild(countText);

@@ -12,20 +12,8 @@ import {
   UI_STYLES,
   Z_INDEX
 } from "../config/design.js";
-import { 
-  drawPanel,
-  drawModalOverlay,
-  createStyledText,
-  createTitle,
-  createSubtitle,
-  createBodyText,
-  fadeIn,
-  scaleTo,
-  centerContainer,
-  stackVertically,
-  arrangeHorizontally
-} from "./ui.js";
-import { makeButton } from "../catan/ui/button.js";
+import { makeButton } from "../catan/ui/materialButton.js";
+import { fadeOut as materialFadeOut, drawMaterialCard, createMaterialText } from './materialUI.js';
 
 // ==================== DIALOG TYPES ====================
 
@@ -93,7 +81,7 @@ export function createDialog(app, options = {}) {
 
   // Panel background
   const panelBg = new PIXI.Graphics();
-  drawPanel(panelBg, width, height, UI_STYLES.modalBackground());
+  drawMaterialCard(panelBg, width, height, UI_STYLES.modalBackground());
   panel.addChild(panelBg);
 
   // Content container (inside panel with padding)
@@ -156,13 +144,13 @@ export function createDialog(app, options = {}) {
 
     // Exit animation
     if (config.animation === DIALOG_ANIMATION.FADE) {
-      fadeOut(overlay, EFFECTS.animation.normal, () => {
+      materialFadeOut(overlay, EFFECTS.animation.normal, () => {
         app.stage.removeChild(overlay);
         config.onClose?.();
       });
     } else if (config.animation === DIALOG_ANIMATION.SCALE) {
       scaleTo(panel, 0.8, EFFECTS.animation.normal);
-      fadeOut(overlay, EFFECTS.animation.normal, () => {
+      materialFadeOut(overlay, EFFECTS.animation.normal, () => {
         app.stage.removeChild(overlay);
         config.onClose?.();
       });
@@ -399,33 +387,6 @@ export function createResourceDialog(app, options = {}) {
   return dialog;
 }
 
-// ==================== ANIMATION HELPERS ====================
-// Using unified animation system from materialUI.js
-
-import { fadeOut as materialFadeOut, animateToY as materialAnimateToY } from './materialUI.js';
-
-/**
- * @deprecated Use fadeOut from materialUI.js instead
- * Fade out animation
- * @param {PIXI.Container} container - Container to animate
- * @param {number} duration - Animation duration
- * @param {function} onComplete - Completion callback
- */
-function fadeOut(container, duration = EFFECTS.animation.normal, onComplete = null) {
-  return materialFadeOut(container, duration, onComplete);
-}
-
-/**
- * @deprecated Use animateToY from materialUI.js instead
- * Animate to Y position
- * @param {PIXI.Container} container - Container to animate
- * @param {number} targetY - Target Y position
- * @param {number} duration - Animation duration
- */
-function animateToY(container, targetY, duration = EFFECTS.animation.normal) {
-  return materialAnimateToY(container, targetY, duration);
-}
-
 // ==================== RESOURCE CHIP HELPER ====================
 
 /**
@@ -452,7 +413,7 @@ function createResourceChip(resource, onClick) {
   container.addChild(bg);
   
   // Resource text
-  const text = createStyledText(
+  const text = createMaterialText(
     resource.charAt(0).toUpperCase() + resource.slice(1), 
     'buttonSmall'
   );

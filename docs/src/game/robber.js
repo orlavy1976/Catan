@@ -1,4 +1,4 @@
-import { makeButton } from "../catan/ui/button.js";
+import { makeButton } from "../catan/ui/materialButton.js";
 import { RES_KEYS } from "../config/constants.js";
 
 export function enterRobberMove({ app, boardC, hud, state, tileSprites, robberSpriteRef, graph, layout, resPanel }, onDone) {

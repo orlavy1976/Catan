@@ -7,8 +7,12 @@ import {
   ALPHA
 } from "../../config/design.js";
 import { 
-  drawPanel, 
-  createSubtitle,
+  drawMaterialCard 
+} from "../../utils/materialUI.js";
+import { 
+  createMaterialHeadline 
+} from "../../utils/materialUI.js";
+import { 
   stackVertically 
 } from "../../utils/ui.js";
 
@@ -25,7 +29,7 @@ export function createResourcePanel(app, state) {
   panel.addChild(bg);
 
   // כותרת - using design system
-  const title = createSubtitle("Players");
+  const title = createMaterialHeadline("Players", "small");
   panel.addChild(title);
 
   // שורות שחקנים
@@ -77,7 +81,7 @@ export function createResourcePanel(app, state) {
     const height = Math.max(totalHeight, 120 * scaleFactor);
 
     // Use design system for panel background
-    drawPanel(bg, width, height, {
+    drawMaterialCard(bg, width, height, {
       color: COLORS.background.primary,
       alpha: ALPHA.panelBackground,
       borderRadius: DIMENSIONS.borderRadius.medium * scaleFactor,

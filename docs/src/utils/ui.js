@@ -90,57 +90,6 @@ export function drawModalOverlay(graphics, screenWidth, screenHeight) {
   graphics.endFill();
 }
 
-// ==================== TEXT HELPERS ====================
-
-/**
- * Create a styled text object
- * @param {string} text - Text content
- * @param {string} styleType - Style type from TYPOGRAPHY.styles
- * @param {object} overrides - Style overrides
- * @returns {PIXI.Text} Styled text object
- */
-export function createStyledText(text, styleType = 'body', overrides = {}) {
-  const baseStyle = TYPOGRAPHY.styles[styleType] || TYPOGRAPHY.styles.body;
-  const style = { ...baseStyle, ...overrides };
-  return new PIXI.Text(text, style);
-}
-
-/**
- * Create a title text
- * @param {string} text - Title text
- * @returns {PIXI.Text} Title text object
- */
-export function createTitle(text) {
-  return createStyledText(text, 'title');
-}
-
-/**
- * Create a subtitle text
- * @param {string} text - Subtitle text
- * @returns {PIXI.Text} Subtitle text object
- */
-export function createSubtitle(text) {
-  return createStyledText(text, 'subtitle');
-}
-
-/**
- * Create body text
- * @param {string} text - Body text
- * @returns {PIXI.Text} Body text object
- */
-export function createBodyText(text) {
-  return createStyledText(text, 'body');
-}
-
-/**
- * Create success message text
- * @param {string} text - Success message
- * @returns {PIXI.Text} Success text object
- */
-export function createSuccessText(text) {
-  return createStyledText(text, 'success');
-}
-
 // ==================== COLOR HELPERS ====================
 
 /**
@@ -215,38 +164,6 @@ export function arrangeHorizontally(elements, startX = 0, gap = SPACING.base) {
   });
   
   return currentX - gap; // Return final position without last gap
-}
-
-// ==================== ANIMATION HELPERS ====================
-// Legacy animation functions - use materialUI.js for new animations
-
-import { 
-  fadeIn as materialFadeIn, 
-  scaleTo as materialScaleTo,
-  animateFade,
-  animateScale
-} from './materialUI.js';
-
-/**
- * @deprecated Use fadeIn from materialUI.js instead
- * Create a simple fade in animation
- * @param {PIXI.Container} container - Container to animate
- * @param {number} duration - Animation duration in ms
- * @param {function} onComplete - Callback when animation completes
- */
-export function fadeIn(container, duration = EFFECTS.animation.normal, onComplete = null) {
-  return materialFadeIn(container, duration, onComplete);
-}
-
-/**
- * @deprecated Use scaleTo from materialUI.js instead
- * Create a simple scale animation
- * @param {PIXI.Container} container - Container to animate
- * @param {number} targetScale - Target scale value
- * @param {number} duration - Animation duration in ms
- */
-export function scaleTo(container, targetScale = 1.1, duration = EFFECTS.animation.fast) {
-  return materialScaleTo(container, targetScale, duration);
 }
 
 // ==================== RESPONSIVE HELPERS ====================

@@ -4,8 +4,11 @@ import {
   createMaterialConfirm, 
   MATERIAL_DIALOG_TYPES 
 } from '../../utils/materialDialog.js';
-import { createMaterialButton } from '../../catan/ui/materialButton.js';
-import { createMaterialText } from '../../utils/materialUI.js';
+import { createMaterialButton, makeButton } from '../../catan/ui/materialButton.js';
+import { 
+  createMaterialText, 
+  createMaterialHeadline 
+} from '../../utils/materialUI.js';
 import { COLORS, SPACING } from '../../config/design.js';
 import { RES_KEYS } from '../../config/constants.js';
 
@@ -79,9 +82,9 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
     
     dialog.addContent(createMaterialText("No trades available", 'bodyLarge'));
 
-    const messageText = createStyledText(
+    const messageText = createMaterialText(
       "You don't have enough resources for any bank trades.",
-      'body'
+      'bodyMedium'
     );
     messageText.x = 0;
     messageText.y = dialog.contentStartY;
@@ -210,7 +213,7 @@ function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, g
   let currentY = dialog.contentStartY + SPACING.sm;
 
   // === SECTION: What you give ===
-  const giveTitle = createStyledText("You give:", 'subtitle');
+  const giveTitle = createMaterialHeadline("You give:", 'small');
   giveTitle.x = SPACING.md;
   giveTitle.y = currentY;
   dialog.content.addChild(giveTitle);
@@ -223,7 +226,7 @@ function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, g
   currentY += 80;
 
   // === SECTION: What you receive ===
-  const receiveTitle = createStyledText("You receive:", 'subtitle');
+  const receiveTitle = createMaterialHeadline("You receive:", 'small');
   receiveTitle.x = SPACING.md;
   receiveTitle.y = currentY;
   dialog.content.addChild(receiveTitle);
@@ -248,7 +251,7 @@ function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, g
     const receiveTotal = Object.values(tradeOffer.receive).reduce((sum, count) => sum + count, 0);
     
     if (giveTotal === 0 && receiveTotal === 0) {
-      const emptyText = createStyledText("Select resources to trade", 'body');
+      const emptyText = createMaterialText("Select resources to trade", 'bodyMedium');
       emptyText.style.fill = COLORS.text.secondary;
       summaryContainer.addChild(emptyText);
       return;
@@ -268,7 +271,7 @@ function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, g
       summaryText += `Get ${receiveItems.join(", ")}`;
     }
     
-    const summary = createStyledText(summaryText, 'body');
+    const summary = createMaterialText(summaryText, 'bodyMedium');
     summaryContainer.addChild(summary);
   }
 
@@ -345,7 +348,7 @@ function createResourceSelector(playerResources, selection, mode) {
     resourceContainer.addChild(iconBg);
 
     // Resource type label
-    const typeLabel = createStyledText(resourceType.charAt(0).toUpperCase(), 'subtitle');
+    const typeLabel = createMaterialHeadline(resourceType.charAt(0).toUpperCase(), 'small');
     typeLabel.x = 15;
     typeLabel.y = 12;
     typeLabel.style.fill = 0xffffff;
@@ -353,7 +356,7 @@ function createResourceSelector(playerResources, selection, mode) {
 
     // Available count (only for 'give' mode)
     if (mode === 'give') {
-      const availableText = createStyledText(`(${playerResources[resourceType]})`, 'caption');
+      const availableText = createMaterialText(`(${playerResources[resourceType]})`, 'bodySmall');
       availableText.x = 0;
       availableText.y = 45;
       availableText.style.fontSize = 10;
@@ -376,7 +379,7 @@ function createResourceSelector(playerResources, selection, mode) {
     controlsContainer.addChild(minusBtn);
 
     // Count display
-    const countText = createStyledText("0", 'body');
+    const countText = createMaterialText("0", 'bodyMedium');
     countText.x = 25;
     countText.y = 2;
     countText.anchor.set(0.5, 0);
@@ -428,7 +431,7 @@ function createSmallButton(label, onClick) {
   bg.endFill();
   container.addChild(bg);
 
-  const text = createStyledText(label, 'caption');
+  const text = createMaterialText(label, 'bodySmall');
   text.x = 7.5;
   text.y = 7.5;
   text.anchor.set(0.5);
@@ -507,7 +510,7 @@ function showTradeResponseDialog({ app, hud, state, resPanel, currentPlayer, tar
     .map(res => `${tradeOffer.receive[res]} ${res}`);
 
   const summaryText = `Proposed Trade:\nYou give: ${giveItems.join(", ")}\nYou get: ${receiveItems.join(", ")}`;
-  const summary = createStyledText(summaryText, 'body');
+  const summary = createMaterialText(summaryText, 'bodyMedium');
   summary.x = SPACING.md;
   summary.y = currentY;
   dialog.content.addChild(summary);
@@ -515,7 +518,7 @@ function showTradeResponseDialog({ app, hud, state, resPanel, currentPlayer, tar
   currentY += 100;
 
   // AI "thinking" animation
-  const thinkingText = createStyledText(`Player ${targetPlayer.id} is considering your offer...`, 'body');
+  const thinkingText = createMaterialText(`Player ${targetPlayer.id} is considering your offer...`, 'bodyMedium');
   thinkingText.x = SPACING.md;
   thinkingText.y = currentY;
   thinkingText.style.fill = COLORS.text.secondary;
@@ -677,9 +680,9 @@ function showTradeAcceptedDialog({ app, hud, state, resPanel, currentPlayer, tar
   let currentY = dialog.contentStartY + SPACING.md;
 
   // Success message
-  const successText = createStyledText(
+  const successText = createMaterialText(
     `Player ${targetPlayer.id} says: "${aiDecision.reason}"\n\nThe trade has been completed!`,
-    'body'
+    'bodyMedium'
   );
   successText.x = SPACING.md;
   successText.y = currentY;
@@ -695,7 +698,7 @@ function showTradeAcceptedDialog({ app, hud, state, resPanel, currentPlayer, tar
     .map(res => `${tradeOffer.receive[res]} ${res}`);
 
   const detailsText = `You gave: ${giveItems.join(", ")}\nYou received: ${receiveItems.join(", ")}`;
-  const details = createStyledText(detailsText, 'body');
+  const details = createMaterialText(detailsText, 'bodyMedium');
   details.x = SPACING.md;
   details.y = currentY;
   dialog.content.addChild(details);
@@ -740,9 +743,9 @@ function showTradeRejectedDialog({ app, hud, state, resPanel, currentPlayer, tar
   let currentY = dialog.contentStartY + SPACING.md;
 
   // Rejection message
-  const rejectionText = createStyledText(
+  const rejectionText = createMaterialText(
     `Player ${targetPlayer.id} says: "${aiDecision.reason}"\n\nMaybe try a different offer?`,
-    'body'
+    'bodyMedium'
   );
   rejectionText.x = SPACING.md;
   rejectionText.y = currentY;
@@ -835,14 +838,14 @@ function createPlayerTradeButton(player, onClick) {
   container.addChild(colorDot);
   
   // Player name
-  const nameText = createStyledText(`Player ${player.id}`, 'subtitle');
+  const nameText = createMaterialHeadline(`Player ${player.id}`, 'small');
   nameText.x = 40;
   nameText.y = 15;
   container.addChild(nameText);
   
   // Resource count
   const totalResources = Object.values(player.resources).reduce((sum, count) => sum + count, 0);
-  const resourceText = createStyledText(`${totalResources} resources`, 'body');
+  const resourceText = createMaterialText(`${totalResources} resources`, 'bodyMedium');
   resourceText.x = 40;
   resourceText.y = 35;
   container.addChild(resourceText);

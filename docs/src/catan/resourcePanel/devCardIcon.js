@@ -9,8 +9,8 @@ import {
   ALPHA 
 } from "../../config/design.js";
 import { 
-  createStyledText 
-} from "../../utils/ui.js";
+  createMaterialText 
+} from "../../utils/materialUI.js";
 
 /**
  * Create a development card icon with count
@@ -37,7 +37,7 @@ export function makeDevCardIcon() {
   container.addChild(cardIcon);
 
   // Count text
-  const countText = createStyledText("0", 'resourceCount', {
+  const countText = createMaterialText("0", 'resourceCount', {
     fill: COLORS.text.primary,
     fontSize: 11
   });

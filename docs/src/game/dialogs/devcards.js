@@ -17,13 +17,15 @@ import {
   TYPOGRAPHY 
 } from "../../config/design.js";
 import { 
-  createStyledText,
-  createSubtitle,
-  createBodyText,
+  createMaterialText,
+  createMaterialHeadline,
+  createMaterialBody
+} from "../../utils/materialUI.js";
+import { 
   stackVertically,
   arrangeHorizontally 
 } from "../../utils/ui.js";
-import { makeButton } from "../../catan/ui/button.js";
+import { makeButton } from "../../catan/ui/materialButton.js";
 import { drawDevCardFace, pretty, prettyDesc } from "../devcards/ui.js";
 
 // Development card effects
@@ -128,7 +130,7 @@ function showCardRevealDialog({ app, hud, card }) {
   currentY += 120 + SPACING.lg;
 
   // Card name
-  const cardName = createStyledText(pretty(card), 'title', {
+  const cardName = createMaterialHeadline(pretty(card), 'medium', {
     fill: COLORS.text.warning
   });
   cardName.anchor.set(0.5, 0);
@@ -219,9 +221,9 @@ export function showPlayDevCardDialog(deps) {
     rowContainer.addChild(infoContainer);
 
     // Name and quantity
-    const nameText = createStyledText(
+    const nameText = createMaterialHeadline(
       `${cardType.name}${qty > 0 ? ` (×${qty})` : ' (—)'}`,
-      'subtitle',
+      'small',
       { fill: available ? cardType.color : COLORS.text.muted }
     );
     nameText.y = 0;
@@ -315,7 +317,7 @@ export function showYearOfPlentyDialog(deps) {
 
   // Selected resources display
   const selectedContainer = new PIXI.Container();
-  const selectedText = createStyledText("Selected: None", 'body');
+  const selectedText = createMaterialText("Selected: None", 'bodyMedium');
   selectedText.x = 0;
   selectedText.y = 0;
   selectedContainer.addChild(selectedText);

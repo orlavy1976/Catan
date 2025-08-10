@@ -8,7 +8,9 @@ import {
   getPlayerColor 
 } from "../../config/design.js";
 import { 
-  createStyledText,
+  createMaterialText
+} from "../../utils/materialUI.js";
+import { 
   arrangeHorizontally 
 } from "../../utils/ui.js";
 
@@ -38,7 +40,7 @@ export function makePlayerRow(player) {
   container.addChild(badge);
 
   // שם/מזהה - using design system
-  const nameText = createStyledText(`P${player.id}`, 'playerName');
+  const nameText = createMaterialText(`P${player.id}`, 'playerName');
   nameText.x = SPACING.lg + DIMENSIONS.playerBadge.radius + SPACING.base; 
   nameText.y = SPACING.sm;
   container.addChild(nameText);

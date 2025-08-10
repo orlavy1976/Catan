@@ -9,9 +9,11 @@ import {
   getPlayerColor
 } from "../config/design.js";
 import { 
-  drawPanel, 
-  createSubtitle,
-  createStyledText,
+  drawMaterialCard,
+  createMaterialHeadline,
+  createMaterialText
+} from "../utils/materialUI.js";
+import { 
   stackVertically 
 } from "../utils/ui.js";
 
@@ -22,7 +24,7 @@ export function createScorePanel(app, state) {
   const bg = new PIXI.Graphics();
   panel.addChild(bg);
 
-  const title = createSubtitle("Score");
+  const title = createMaterialHeadline("Score", "small");
   panel.addChild(title);
 
   const rowsC = new PIXI.Container();
@@ -36,7 +38,7 @@ export function createScorePanel(app, state) {
     const height = Math.max(80, totalHeight);
 
     // Use design system for panel background
-    drawPanel(bg, width, height, {
+    drawMaterialCard(bg, width, height, {
       color: COLORS.background.secondary,
       alpha: ALPHA.panelBackground,
       borderRadius: DIMENSIONS.borderRadius.medium,
@@ -77,7 +79,7 @@ export function createScorePanel(app, state) {
 
       // Player name and score - using design system
       const name = `P${row.playerIdx + 1}`;
-      const scoreText = createStyledText(`${name}: ${row.total} VP`, 'ui', {
+      const scoreText = createMaterialText(`${name}: ${row.total} VP`, 'ui', {
         fill: COLORS.text.secondary
       });
       scoreText.x = DIMENSIONS.playerBadge.radius * 2 + SPACING.sm;
@@ -92,7 +94,7 @@ export function createScorePanel(app, state) {
       if (row.hasLargestArmy) bits.push("LA+2");
       if (row.hasLongestRoad) bits.push("LR+2");
 
-      const detail = createStyledText(bits.join("  "), 'bodySmall', {
+      const detail = createMaterialText(bits.join("  "), 'bodySmall', {
         fill: COLORS.text.muted
       });
       detail.x = scoreText.x;
