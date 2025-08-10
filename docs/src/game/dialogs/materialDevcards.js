@@ -31,6 +31,9 @@ import {
 
 import { RES_KEYS } from '../../config/constants.js';
 
+// Game functionality
+import { startBuildRoad } from '../buildRoad.js';
+
 // Development card effects
 import { playKnight } from "../devcards/effects/knight.js";
 import { playRoadBuilding } from "../devcards/effects/roadBuilding.js";
@@ -165,7 +168,7 @@ function showCardPurchaseResult(app, cardType) {
  * Show Material Design play development card dialog
  * @param {object} deps - Dependencies
  */
-export function showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores }) {
+export function showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores, refreshHudAvailability }) {
   const me = state.players[state.currentPlayer - 1];
   const playableCards = getPlayableCards(me);
 
@@ -524,14 +527,14 @@ function executeBuyDevCard({ state, resPanel, refreshScores, hud }) {
  * Play a development card
  */
 function playDevCard(card, deps) {
-  const { app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores } = deps;
+  const { app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores, refreshHudAvailability } = deps;
 
   switch (card.type) {
     case 'knight':
-      playKnight({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, refreshScores });
+      playKnight({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, refreshScores, refreshHudAvailability });
       break;
     case 'road_building':
-      playRoadBuilding({ app, hud, state, resPanel, boardC, graph, builder, refreshScores });
+      playRoadBuilding({ app, hud, state, resPanel, boardC, graph, builder, startBuildRoad, refreshScores, refreshHudAvailability });
       break;
     case 'year_of_plenty':
       playYearOfPlenty({ app, hud, state, resPanel, refreshScores });

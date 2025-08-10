@@ -40,16 +40,36 @@ export function makeBuilder(app, boardC, graph, state) {
     ghostsLayer.addChild(g);
   }
 
-  function drawCityGhost(vId, color, alpha = 0.35) {
+  function drawCityGhost(vId, color, alpha = 0.7) {
     const v = graph.vertices[vId];
-    const g = new PIXI.Graphics();
-    g.beginFill(color, alpha);
-    g.drawPolygon(-14, -10, -4, -26, 6, -10, 6, 6, -14, 6);
-    g.endFill();
-    g.lineStyle({ width: 2, color: 0x000000, alpha: 0.2 });
-    g.drawPolygon(-14, -10, -4, -26, 6, -10, 6, 6, -14, 6);
-    g.x = v.x; g.y = v.y;
-    ghostsLayer.addChild(g);
+    
+    // Create a container for the city ghost with indicator
+    const container = new PIXI.Container();
+    container.x = v.x;
+    container.y = v.y;
+    
+    // Large bright circle indicator for excellent visibility
+    const indicator = new PIXI.Graphics();
+    indicator.beginFill(0xFFFF00, 0.3); // Bright yellow background
+    indicator.drawCircle(0, 0, 30);
+    indicator.endFill();
+    indicator.lineStyle({ width: 4, color: 0xFFFF00, alpha: 0.9 }); // Bright yellow border
+    indicator.drawCircle(0, 0, 30);
+    container.addChild(indicator);
+    
+    // City ghost shape - more prominent
+    const cityGhost = new PIXI.Graphics();
+    cityGhost.beginFill(color, alpha);
+    cityGhost.drawPolygon(-14, -10, -4, -26, 6, -10, 6, 6, -14, 6);
+    cityGhost.endFill();
+    
+    // Add a bright white outline for contrast
+    cityGhost.lineStyle({ width: 3, color: 0xFFFFFF, alpha: 1.0 });
+    cityGhost.drawPolygon(-14, -10, -4, -26, 6, -10, 6, 6, -14, 6);
+    
+    container.addChild(cityGhost);
+    
+    ghostsLayer.addChild(container);
   }
 
   // --- API חיצוני תואם לקודם ---

@@ -1,21 +1,16 @@
 // docs/src/catan/scorePanel.js
+// 🏆 Score Panel - Material Design
 
 import { 
-  DIMENSIONS, 
-  SPACING, 
-  Z_INDEX,
-  COLORS,
-  ALPHA,
-  getPlayerColor
-} from "../config/design.js";
+  MATERIAL_COLORS,
+  MATERIAL_SPACING
+} from "../config/materialDesign.js";
+import { Z_INDEX } from "../config/design.js";
+import { PLAYER_COLORS } from "../config/constants.js";
 import { 
-  drawMaterialCard,
-  createMaterialHeadline,
-  createMaterialText
+  createMaterialText,
+  drawMaterialCard
 } from "../utils/materialUI.js";
-import { 
-  stackVertically 
-} from "../utils/ui.js";
 
 export function createScorePanel(app, state) {
   const panel = new PIXI.Container();
@@ -24,38 +19,38 @@ export function createScorePanel(app, state) {
   const bg = new PIXI.Graphics();
   panel.addChild(bg);
 
-  const title = createMaterialHeadline("Score", "small");
+  // Title - Material Design typography
+  const title = createMaterialText("Score", 'headlineSmall');
+  title.style.fill = MATERIAL_COLORS.neutral[100]; // Light text
   panel.addChild(title);
 
   const rowsC = new PIXI.Container();
   panel.addChild(rowsC);
 
   function layout() {
-    const width = DIMENSIONS.panel.scoreWidth;
+    const width = 200; // Fixed width for score panel
     const titleHeight = title.height || 20;
     const contentHeight = rowsC.height || 0;
-    const totalHeight = SPACING.panelPadding * 2 + titleHeight + SPACING.sm + contentHeight;
+    const totalHeight = MATERIAL_SPACING[6] * 2 + titleHeight + MATERIAL_SPACING[3] + contentHeight;
     const height = Math.max(80, totalHeight);
 
-    // Use design system for panel background
-    drawMaterialCard(bg, width, height, {
-      color: COLORS.background.secondary,
-      alpha: ALPHA.panelBackground,
-      borderRadius: DIMENSIONS.borderRadius.medium,
-      border: { width: 2, color: COLORS.ui.border, alpha: ALPHA.border }
-    });
+    // Panel background - Material Design surface
+    bg.clear();
+    bg.beginFill(MATERIAL_COLORS.surface.primary, 0.9);
+    bg.drawRoundedRect(0, 0, width, height, 12); // 12px border radius
+    bg.endFill();
 
-    // Position title with design system spacing
-    title.x = SPACING.panelPadding; 
-    title.y = SPACING.panelPadding;
+    // Title positioning
+    title.x = MATERIAL_SPACING[4]; // 16px padding
+    title.y = MATERIAL_SPACING[4]; // 16px padding
 
     // Position rows container
-    rowsC.x = SPACING.panelPadding;
-    rowsC.y = title.y + titleHeight + SPACING.sm;
+    rowsC.x = MATERIAL_SPACING[4]; // 16px padding
+    rowsC.y = title.y + titleHeight + MATERIAL_SPACING[3]; // 12px spacing
 
     // Position panel at bottom-right corner
-    panel.x = app.renderer.width - width - SPACING.containerPadding;
-    panel.y = app.renderer.height - height - SPACING.containerPadding;
+    panel.x = app.renderer.width - width - MATERIAL_SPACING[6]; // 24px margin
+    panel.y = app.renderer.height - height - MATERIAL_SPACING[6]; // 24px margin
   }
 
   layout();
@@ -68,25 +63,24 @@ export function createScorePanel(app, state) {
       const line = new PIXI.Container();
       rowsC.addChild(line);
 
-      // Player badge (matching resource panel style)
+      // Player badge with Material Design colors
       const badge = new PIXI.Graphics();
-      badge.beginFill(getPlayerColor(row.playerIdx), 1);
-      badge.drawCircle(0, 0, DIMENSIONS.playerBadge.radius);
+      badge.beginFill(PLAYER_COLORS[row.playerIdx], 1);
+      badge.drawCircle(0, 0, 8); // Material Design chip size
       badge.endFill();
-      badge.x = DIMENSIONS.playerBadge.radius;
-      badge.y = DIMENSIONS.playerBadge.radius + 2; // Center with text
+      badge.x = 8;
+      badge.y = 8 + 2; // Center with text
       line.addChild(badge);
 
-      // Player name and score - using design system
+      // Player name and score - Material Design typography
       const name = `P${row.playerIdx + 1}`;
-      const scoreText = createMaterialText(`${name}: ${row.total} VP`, 'ui', {
-        fill: COLORS.text.secondary
-      });
-      scoreText.x = DIMENSIONS.playerBadge.radius * 2 + SPACING.sm;
+      const scoreText = createMaterialText(`${name}: ${row.total} VP`, 'bodyMedium');
+      scoreText.style.fill = MATERIAL_COLORS.neutral[100];
+      scoreText.x = 16 + MATERIAL_SPACING[2]; // 8px spacing
       scoreText.y = 0;
       line.addChild(scoreText);
 
-      // Score breakdown details - using design system
+      // Score breakdown details - Material Design typography
       const bits = [];
       if (row.settlements) bits.push(`${row.settlements}×S`);
       if (row.cities) bits.push(`${row.cities}×C`);
@@ -94,19 +88,18 @@ export function createScorePanel(app, state) {
       if (row.hasLargestArmy) bits.push("LA+2");
       if (row.hasLongestRoad) bits.push("LR+2");
 
-      const detail = createMaterialText(bits.join("  "), 'bodySmall', {
-        fill: COLORS.text.muted
-      });
+      const detail = createMaterialText(bits.join("  "), 'bodySmall');
+      detail.style.fill = MATERIAL_COLORS.neutral[200];
       detail.x = scoreText.x;
       detail.y = scoreText.y + scoreText.height + 2;
       line.addChild(detail);
     });
 
-    // Position rows with consistent spacing
+    // Position rows with Material Design spacing
     let currentY = 0;
     rowsC.children.forEach(line => {
       line.y = currentY;
-      currentY += 40; // Consistent row height
+      currentY += MATERIAL_SPACING[9]; // 36px row height
     });
 
     layout();

@@ -474,17 +474,17 @@ export function showMaterialPlayerTradeDialog({ app, hud, state, resPanel, graph
  */
 function createResourceDisplay(resources) {
   const container = createMaterialContainer({
-    padding: MATERIAL_SPACING[4],
-    gap: MATERIAL_SPACING[3],
+    padding: MATERIAL_SPACING[2],
+    gap: MATERIAL_SPACING[2],
     direction: 'horizontal'
   });
 
-  // Background
+  // Background - much smaller
   const bg = new PIXI.Graphics();
-  drawMaterialCard(bg, 450, 80, {
+  drawMaterialCard(bg, 300, 50, {
     elevation: 1,
     backgroundColor: MATERIAL_COLORS.surface.tertiary,
-    borderRadius: 12
+    borderRadius: 8
   });
   container.addChildAt(bg, 0);
 
@@ -503,29 +503,28 @@ function createResourceDisplay(resources) {
 function createResourceChip(resource, amount) {
   const container = new PIXI.Container();
   
-  // Background chip
+  // Background chip - smaller
   const bg = new PIXI.Graphics();
-  drawMaterialChip(bg, 80, 40, {
+  drawMaterialChip(bg, 50, 30, {
     backgroundColor: getMaterialResourceColor(resource),
     variant: 'filled'
   });
   container.addChild(bg);
 
-  // Resource name
-  const nameText = createMaterialText(resource.charAt(0).toUpperCase() + resource.slice(1), 'label', {
+  // Resource initial
+  const nameText = createMaterialText(resource.charAt(0).toUpperCase(), 'bodySmall', {
     fill: MATERIAL_COLORS.neutral[0]
   });
-  nameText.x = 8;
-  nameText.y = 8;
+  nameText.x = 6;
+  nameText.y = 4;
   container.addChild(nameText);
 
   // Amount
-  const amountText = createMaterialText(amount.toString(), 'counter', {
-    fill: MATERIAL_COLORS.neutral[0],
-    fontSize: 16
+  const amountText = createMaterialText(amount.toString(), 'bodySmall', {
+    fill: MATERIAL_COLORS.neutral[0]
   });
-  amountText.x = 8;
-  amountText.y = 22;
+  amountText.x = 6;
+  amountText.y = 16;
   container.addChild(amountText);
 
   return container;

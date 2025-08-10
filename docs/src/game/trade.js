@@ -7,62 +7,18 @@ import {
   createMaterialDialog 
 } from "../utils/materialDialog.js";
 import { createMaterialText } from "../utils/materialUI.js";
-import { 
-  showMaterialTradeMenu,
-  showMaterialBankTradeDialog, 
-  showMaterialPlayerTradeDialog 
-} from "./dialogs/materialTrade.js";
+import { showTradeMenu } from "./dialogs/tradeMenu.js";
 
 /* ===============================================
-   Trade Menu (Bank vs Players)
+   Trade Menu (Bank vs Players) - New Modular System
    =============================================== */
 export function startTradeMenu({ app, hud, state, resPanel, graph }) {
-  showMaterialChoiceDialog(app, {
-    title: "Choose Trade Type",
-    choices: [
-      {
-        label: "Bank / Port",
-        action: () => startBankTrade({ app, hud, state, resPanel, graph })
-      },
-      {
-        label: "Players",
-        action: () => startPlayerTrade({ app, hud, state, resPanel })
-      }
-    ],
-    onShow: () => {
-      // disable other HUD while open
-      hud.setEndEnabled(false);
-      hud.setBuildRoadEnabled(false);
-      hud.setBuildSettlementEnabled(false);
-      hud.setBuildCityEnabled(false);
-      hud.setTradeEnabled(false);
-    },
-    onClose: () => {
-      hud.setEndEnabled(true);
-      hud.setBuildRoadEnabled(true);
-      hud.setBuildSettlementEnabled(true);
-      hud.setBuildCityEnabled(true);
-      hud.setTradeEnabled(true);
-    }
-  });
+  showTradeMenu({ app, hud, state, resPanel, graph });
 }
 
 /* ===============================================
-   Bank / Port Trade (Using Material Design)
+   Legacy Functions - Keep for compatibility
    =============================================== */
-export function startBankTrade({ app, hud, state, resPanel, graph }) {
-  showMaterialBankTradeDialog({ app, hud, state, resPanel, graph });
-}
-
-/* ===============================================
-   Player-to-Player Trade (Using Material Design)
-   =============================================== */
-export function startPlayerTrade({ app, hud, state, resPanel }) {
-  console.log('startPlayerTrade called');
-  showMaterialPlayerTradeDialog({ app, hud, state, resPanel, graph: null });
-}
-
-/* ===== Target-side confirmation dialog ===== */
 function confirmOfferWithTarget({ app, hud, state, resPanel, fromIdx, toIdx, offer, want }) {
   const title = `Trade Offer: ${playerLabel(fromIdx, state.players)} → ${playerLabel(toIdx, state.players)}`;
   const message = `${formatOfferSummary(offer, want)}\n\nAccept only if you have the requested cards.`;

@@ -22,7 +22,12 @@ export function startBuildCity(context) {
 
   builder.clearGhosts();
   const color = PLAYER_COLORS[player.colorIdx];
-  candidates.forEach(vId => builder.drawCityGhost(vId, color, 0.35));
+  
+  // Show user feedback about what to do
+  hud.showResult(`Click on any of your ${candidates.length} settlements to upgrade to a city`);
+  
+  // Draw bright city ghosts at settlement locations
+  candidates.forEach(vId => builder.drawCityGhost(vId, color, 0.7));
 
   const interactive = new PIXI.Container();
   boardC.addChild(interactive);

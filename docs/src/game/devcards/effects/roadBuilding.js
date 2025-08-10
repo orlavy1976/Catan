@@ -1,11 +1,16 @@
-export function playRoadBuilding({ app, hud, state, boardC, graph, builder, startBuildRoad }) {
+export function playRoadBuilding({ app, hud, state, boardC, graph, builder, startBuildRoad, refreshHudAvailability }) {
   let remaining = 2;
 
   hud.showResult("Road Building — place 2 roads for free.");
   toggleHud(hud, false);
 
   const placeNext = () => {
-    if (remaining <= 0) { toggleHud(hud, true); hud.showResult("Road Building complete."); return; }
+    if (remaining <= 0) { 
+      // Use proper resource validation instead of enabling everything
+      refreshHudAvailability();
+      hud.showResult("Road Building complete."); 
+      return; 
+    }
 
     startBuildRoad(
       { app, boardC, hud, state, graph, builder },

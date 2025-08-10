@@ -19,7 +19,7 @@ import { rollDice } from "./catan/rules.js";
 import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
 
 // New modern dialog system
-import { showMaterialTradeMenu } from "./game/dialogs/materialTrade.js";
+import { showTradeMenu } from "./game/dialogs/tradeMenu.js";
 import { showMaterialBuyDevCardDialog, showMaterialPlayDevCardDialog } from "./game/dialogs/materialDevcards.js";
 
 // Dev cards (מודולריים) - keep for initialization
@@ -116,7 +116,7 @@ const hud = createMaterialHUD(
   () => {
     try {
       console.log("🛍️ Trade");
-      showMaterialTradeMenu({ app, hud, state, resPanel, graph });
+      showTradeMenu({ app, hud, state, resPanel, graph });
     } catch (error) {
       console.error("Error in trade menu:", error);
     }
@@ -137,7 +137,7 @@ const hud = createMaterialHUD(
   () => {
     try {
       console.log("🎯 Play dev card");
-      showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores });
+      showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores, refreshHudAvailability });
     } catch (error) {
       console.error("Error in play dev card dialog:", error);
     }

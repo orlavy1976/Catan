@@ -1,20 +1,13 @@
 import { makePlayerRow } from "./row.js";
 import { 
-  DIMENSIONS, 
-  SPACING, 
-  Z_INDEX,
-  COLORS,
-  ALPHA
-} from "../../config/design.js";
+  MATERIAL_COLORS,
+  MATERIAL_SPACING
+} from "../../config/materialDesign.js";
+import { Z_INDEX } from "../../config/design.js";
 import { 
+  createMaterialText,
   drawMaterialCard 
 } from "../../utils/materialUI.js";
-import { 
-  createMaterialHeadline 
-} from "../../utils/materialUI.js";
-import { 
-  stackVertically 
-} from "../../utils/ui.js";
 
 const RES_ORDER = ["brick","wood","wheat","sheep","ore"];
 
@@ -24,19 +17,20 @@ export function createResourcePanel(app, state) {
   app.stage.addChild(panel);
   app.stage.sortableChildren = true;
 
-  // רקע - using design system
+  // Background - using Material Design
   const bg = new PIXI.Graphics();
   panel.addChild(bg);
 
-  // כותרת - using design system
-  const title = createMaterialHeadline("Players", "small");
+  // Title - using Material Design
+  const title = createMaterialText("Players", 'headlineSmall');
+  title.style.fill = MATERIAL_COLORS.neutral[100]; // Light text
   panel.addChild(title);
 
-  // שורות שחקנים
+  // Player rows
   const rows = []; // { container, setResource(kind,count), setActive(isActive) }
 
   function buildRows() {
-    // נקה קיים
+    // Clear existing rows
     rows.forEach(r => panel.removeChild(r.container));
     rows.length = 0;
 
@@ -47,10 +41,10 @@ export function createResourcePanel(app, state) {
       rows.push(row);
     });
 
-    // Position rows manually with precise control
-    const startY = SPACING.panelPadding + (title.height || 20) + SPACING.sm;
+    // Position rows with Material Design spacing
+    const startY = MATERIAL_SPACING[4] + (title.height || 24) + MATERIAL_SPACING[3];
     rows.forEach((row, idx) => {
-      row.container.y = startY + (idx * (44 + SPACING.md));
+      row.container.y = startY + (idx * (48 + MATERIAL_SPACING[2])); // Larger row height + spacing
     });
   }
 
@@ -58,39 +52,37 @@ export function createResourcePanel(app, state) {
     const screenWidth = app.renderer.width;
     const screenHeight = app.renderer.height;
     
-    // Responsive scaling
+    // Responsive scaling with Material Design breakpoints
     const scaleFactor = Math.min(1, screenWidth / 1200);
-    const responsiveSpacing = Math.max(8, SPACING.containerPadding * scaleFactor);
+    const responsiveSpacing = Math.max(MATERIAL_SPACING[2], MATERIAL_SPACING[4] * scaleFactor);
     
-    // Calculate required width to fit all content including dev cards
-    const minWidth = DIMENSIONS.panel.resourceWidth * scaleFactor;
-    const contentWidth = (70 + (5 * 48) + 40 + 20) * scaleFactor; // Player name area + 5 resource icons + dev card icon + padding
+    // Calculate required width using Material Design sizing
+    const minWidth = 280 * scaleFactor; // Increased minimum width
+    const contentWidth = (80 + (5 * 52) + 50 + 24) * scaleFactor; // More generous spacing
     const width = Math.max(minWidth, contentWidth);
     
-    const rowHeight = Math.max(35, 44 * scaleFactor); // From row component
-    const titleHeight = (title.height || 20) * scaleFactor; // Fallback for title height
-    const topPadding = SPACING.panelPadding * scaleFactor;
-    const bottomPadding = SPACING.panelPadding * scaleFactor;
-    const gapAfterTitle = SPACING.sm * scaleFactor;
-    const rowGap = SPACING.md * scaleFactor;
+    const rowHeight = Math.max(40, 48 * scaleFactor); // Material Design row height
+    const titleHeight = (title.height || 24) * scaleFactor;
+    const topPadding = MATERIAL_SPACING[4] * scaleFactor;
+    const bottomPadding = MATERIAL_SPACING[4] * scaleFactor;
+    const gapAfterTitle = MATERIAL_SPACING[3] * scaleFactor;
+    const rowGap = MATERIAL_SPACING[2] * scaleFactor;
     
-    // Calculate total content height more precisely
+    // Calculate total content height
     const contentHeight = titleHeight + gapAfterTitle + (state.players.length * rowHeight) + ((state.players.length - 1) * rowGap);
     const totalHeight = topPadding + contentHeight + bottomPadding;
     
-    const height = Math.max(totalHeight, 120 * scaleFactor);
+    const height = Math.max(totalHeight, 140 * scaleFactor);
 
-    // Use design system for panel background
+    // Use Material Design elevated surface
     drawMaterialCard(bg, width, height, {
-      color: COLORS.background.primary,
-      alpha: ALPHA.panelBackground,
-      borderRadius: DIMENSIONS.borderRadius.medium * scaleFactor,
-      border: { width: 1, color: COLORS.ui.border, alpha: ALPHA.border }
+      backgroundColor: MATERIAL_COLORS.surface.primary,
+      borderRadius: 12 * scaleFactor
     });
 
-    // Position title with design system spacing
-    title.x = SPACING.panelPadding * scaleFactor; 
-    title.y = SPACING.panelPadding * scaleFactor;
+    // Position title with Material Design spacing
+    title.x = MATERIAL_SPACING[4] * scaleFactor; 
+    title.y = MATERIAL_SPACING[4] * scaleFactor;
     
     // Scale title text
     title.scale.set(scaleFactor);
@@ -99,16 +91,16 @@ export function createResourcePanel(app, state) {
     let panelX = responsiveSpacing;
     let panelY = screenHeight - height - responsiveSpacing;
     
-    // Adjust for smaller screens to prevent overlap with action buttons
+    // Adjust for smaller screens
     if (screenWidth < 1000) {
-      panelX = Math.min(responsiveSpacing, 10);
+      panelX = Math.min(responsiveSpacing, MATERIAL_SPACING[2]);
       panelY = Math.max(panelY, screenHeight * 0.6); // Keep in bottom 40%
     }
     
     panel.x = panelX;
     panel.y = panelY;
     
-    console.log("📊 Resource panel layout - Size:", `${width.toFixed(0)}x${height.toFixed(0)}`, "Position:", `${panelX.toFixed(0)},${panelY.toFixed(0)}`);
+    console.log("📊 Material Design resource panel - Size:", `${width.toFixed(0)}x${height.toFixed(0)}`, "Position:", `${panelX.toFixed(0)},${panelY.toFixed(0)}`);
   }
 
   function updateResources(players) {
@@ -142,12 +134,12 @@ export function createResourcePanel(app, state) {
     rows.forEach((r, i) => r.setActive(i === playerIndexZeroBased));
   }
 
-  // בנייה ראשונית
+  // Initial build and layout
   buildRows();
   layout();
   window.addEventListener("resize", layout);
 
-  // init
+  // Initialize
   updateResources(state.players);
   setCurrent((state.currentPlayer ?? 1) - 1);
 

@@ -199,6 +199,13 @@ export const MATERIAL_TYPOGRAPHY = {
       fill: MATERIAL_COLORS.neutral[300],
     },
 
+    bodySmall: {
+      fontFamily: '"Inter", system-ui, sans-serif',
+      fontSize: 10,
+      fontWeight: 400,
+      fill: MATERIAL_COLORS.neutral[400],
+    },
+
     // UI labels
     label: {
       fontFamily: '"Inter", system-ui, sans-serif',
