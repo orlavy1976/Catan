@@ -1,52 +1,116 @@
-export function makeButton(label, width = 160) {
-  const height = 56, r = 16;
+import { 
+  DIMENSIONS, 
+  TYPOGRAPHY, 
+  ALPHA, 
+  EFFECTS,
+  UI_STYLES
+} from "../../config/design.js";
+
+import {
+  drawButton,
+  createStyledText,
+  scaleTo,
+  getHoverColor
+} from "../../utils/ui.js";
+
+export function makeButton(label, width = DIMENSIONS.button.defaultWidth, variant = 'primary') {
+  const height = DIMENSIONS.button.height;
   const container = new PIXI.Container();
 
   const bg = new PIXI.Graphics();
-  drawBg();
   container.addChild(bg);
 
-  const txt = new PIXI.Text(label, {
-    fontFamily: "Georgia, serif",
-    fontSize: 20,
-    fill: 0xffffff,
-    stroke: 0x000000,
-    strokeThickness: 3,
-  });
+  // Create text using design system
+  const txt = createStyledText(label, 'button');
   txt.anchor.set(0.5);
-  txt.x = width/2; txt.y = height/2;
+  txt.x = width / 2; 
+  txt.y = height / 2;
   container.addChild(txt);
 
+  // Interactive setup
   container.eventMode = "static";
   container.cursor = "pointer";
 
   let enabled = true;
   let clickHandler = null;
+  let isHovered = false;
 
-  container.on("pointertap", () => { if (enabled) clickHandler?.(); });
+  // Mouse events for better feedback
+  container.on("pointertap", () => { 
+    if (enabled) {
+      // Small feedback animation on click
+      scaleTo(container, 0.95, EFFECTS.animation.fast);
+      setTimeout(() => scaleTo(container, 1, EFFECTS.animation.fast), 100);
+      clickHandler?.(); 
+    }
+  });
+
+  container.on("pointerenter", () => {
+    if (enabled) {
+      isHovered = true;
+      updateStyle();
+      scaleTo(container, EFFECTS.hover.scale, EFFECTS.animation.fast);
+    }
+  });
+
+  container.on("pointerleave", () => {
+    isHovered = false;
+    updateStyle();
+    scaleTo(container, 1, EFFECTS.animation.fast);
+  });
 
   function setEnabled(e) {
     enabled = e;
-    container.alpha = e ? 1 : 0.5;
+    container.alpha = e ? 1 : ALPHA.disabled;
     container.eventMode = e ? "static" : "none";
     container.cursor = e ? "pointer" : "default";
+    updateStyle();
   }
 
-  function onClick(fn){ clickHandler = fn; }
+  function onClick(fn) { 
+    clickHandler = fn; 
+  }
 
-  function drawBg(){
+  function updateStyle() {
+    drawBg();
+  }
+
+  function drawBg() {
+    const isPrimary = variant === 'primary';
+    
     bg.clear();
-    bg.beginFill(0xffffff, 0.15);
-    bg.drawRoundedRect(0, 0, width, height, r);
-    bg.endFill();
-    bg.lineStyle({ width: 2, color: 0xffffff, alpha: 0.35 });
-    bg.drawRoundedRect(0, 0, width, height, r);
+    
+    if (enabled && isHovered) {
+      // Hover state - slightly brighter
+      const style = isPrimary ? UI_STYLES.primaryButton : UI_STYLES.secondaryButton;
+      const hoverAlpha = Math.min(1, style.background.alpha + EFFECTS.hover.alphaChange);
+      
+      bg.beginFill(style.background.color, hoverAlpha);
+      bg.drawRoundedRect(0, 0, width, height, style.borderRadius);
+      bg.endFill();
+      
+      // Stronger border on hover
+      bg.lineStyle({ 
+        width: style.border.width, 
+        color: style.border.color, 
+        alpha: style.border.alpha + 0.2 
+      });
+      bg.drawRoundedRect(0, 0, width, height, style.borderRadius);
+    } else {
+      // Normal state - use design system
+      drawButton(bg, width, height, isPrimary);
+    }
   }
+
+  // Initial draw
+  updateStyle();
 
   return {
     container,
-    width, height,
+    width, 
+    height,
     setEnabled,
     onClick,
+    updateStyle, // Expose for external style updates
   };
 }
