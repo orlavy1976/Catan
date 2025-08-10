@@ -1,6 +1,6 @@
 import { initApp, root } from "./core/app.js";
 import { state } from "./core/state.js";
-import { createHUD } from "./catan/ui.js";
+import { createMaterialHUD } from "./catan/ui.js";
 import { createResourcePanel } from "./catan/resourcePanel.js";
 import { buildGraph } from "./catan/graph.js";
 import { makeBuilder } from "./catan/build.js";
@@ -19,8 +19,8 @@ import { rollDice } from "./catan/rules.js";
 import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
 
 // New modern dialog system
-import { showTradeMenu } from "./game/dialogs/trade.js";
-import { showBuyDevCardDialog, showPlayDevCardDialog } from "./game/dialogs/devcards.js";
+import { showMaterialTradeMenu } from "./game/dialogs/materialTrade.js";
+import { showMaterialBuyDevCardDialog, showMaterialPlayDevCardDialog } from "./game/dialogs/materialDevcards.js";
 
 // Dev cards (מודולריים) - keep for initialization
 import { initDevDeck } from "./game/devcards/index.js";
@@ -57,7 +57,7 @@ layoutBoard();
 window.addEventListener("resize", layoutBoard);
 
 // ---------- UI ----------
-const hud = createHUD(
+const hud = createMaterialHUD(
   app,
   root,
   onRolled,
@@ -79,18 +79,33 @@ const hud = createHUD(
   },
   // onTrade
   () => {
-    console.log("🛍️ Trade");
-    showTradeMenu({ app, hud, state, resPanel, graph });
+    try {
+      console.log("🛍️ Trade");
+      showMaterialTradeMenu({ app, hud, state, resPanel, graph });
+    } catch (error) {
+      console.error("Error in trade menu:", error);
+    }
   },
   // onBuyDev
   () => {
-    console.log("🃏 Buy dev card");
-    showBuyDevCardDialog({ app, hud, state, resPanel, refreshScores });
+    try {
+      console.log("🃏 Buy dev card - Starting...");
+      console.log("State phase:", state.phase);
+      console.log("Has rolled:", state._hasRolled);
+      showMaterialBuyDevCardDialog({ app, hud, state, resPanel, refreshScores });
+      console.log("🃏 Buy dev card - Dialog called successfully");
+    } catch (error) {
+      console.error("Error in buy dev card dialog:", error);
+    }
   },
   // onPlayDev
   () => {
-    console.log("🎯 Play dev card");
-    showPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores });
+    try {
+      console.log("🎯 Play dev card");
+      showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores });
+    } catch (error) {
+      console.error("Error in play dev card dialog:", error);
+    }
   }
 );
 
@@ -117,7 +132,7 @@ initDevDeck(state);
 // =====================
 // ===== DEBUG MODE ====
 // =====================
-const DEBUG_MODE = false;
+const DEBUG_MODE = true;
 
 if (DEBUG_MODE) {
   debugInit();
@@ -131,6 +146,10 @@ if (DEBUG_MODE) {
       state._hasRolled = false;
       hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
       hud.setBottom(`Ready: Roll Dice`);
+      
+      // Welcome notification showcasing the new notification system
+      hud.showInfo("🎲 Game started! Roll dice to begin your turn. Click 📋 to view notification history.", 6000);
+      
       refreshHudAvailability();
       refreshScores();
       resPanel.setCurrent(state.currentPlayer - 1);
@@ -143,15 +162,25 @@ function onRolled(evt) {
   if (state.phase !== "play") return;
 
   const roll = evt ?? rollDice();
+  console.log("🎲 Dice rolled:", roll); // Debug log
+  
   if (hud?.dice && roll?.d1 != null && roll?.d2 != null) {
-    try { hud.dice.set(roll.d1, roll.d2); } catch {}
+    console.log("🎲 Setting dice values:", roll.d1, roll.d2); // Debug log
+    try { 
+      hud.dice.set(roll.d1, roll.d2); 
+    } catch (error) {
+      console.error("🎲 Error setting dice:", error);
+    }
+  } else {
+    console.warn("🎲 Missing hud.dice or roll values:", { hud: !!hud, dice: !!hud?.dice, roll });
   }
+  
   const sum = roll?.sum ?? 0;
   state._hasRolled = true;
 
   if (sum === 7) {
     state.phase = "discard";
-    hud.showResult("Rolled 7 — Discard then move the robber");
+    hud.showWarning("Rolled 7 — Discard then move the robber", 0); // Permanent until resolved
     hud.setBottom("Players with >7 must discard half.");
     refreshHudAvailability();
     refreshScores();
@@ -175,7 +204,7 @@ function onRolled(evt) {
 
   const gain = distributeResources({ sum, state, layout, graph });
   const msg = summarizeGain(gain);
-  if (msg) hud.showResult(msg);
+  if (msg) hud.showSuccess(msg);
 
   refreshHudAvailability();
   refreshScores();

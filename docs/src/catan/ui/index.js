@@ -1,6 +1,9 @@
 import { makeButton } from "./button.js";
 import { makeDiceView } from "./diceView.js";
 
+// Export both traditional and Material HUD
+export { createMaterialHUD } from "./materialHUD.js"; // New Material Design HUD
+
 export function createHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSettlement, onBuildCity, onTrade, onBuyDev, onPlayDev) {
   const hud = new PIXI.Container();
   root.addChild(hud);

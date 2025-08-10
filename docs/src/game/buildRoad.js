@@ -16,7 +16,7 @@ export function startBuildRoad(context, opts = {}) {
   if (!free) {
     const canPay = hasResources(player.resources, BUILD_COSTS.road);
     if (!canPay) {
-      hud.showResult("Not enough resources (need 1 brick + 1 wood)");
+      hud.showError("Not enough resources (need 1 brick + 1 wood)");
       return cleanup();
     }
   }
@@ -28,7 +28,7 @@ export function startBuildRoad(context, opts = {}) {
   // קצוות חוקיים מחוברים לרשת שלך
   const legalEdges = legalRoadEdgesPlay(graph, state, state.currentPlayer - 1, occupiedEdges);
   if (legalEdges.length === 0) {
-    hud.showResult("No legal road placements");
+    hud.showWarning("No legal road placements");
     return cleanup();
   }
 
@@ -57,7 +57,7 @@ export function startBuildRoad(context, opts = {}) {
       // ציור בפועל
       builder.placeRoad(eId, player.colorIdx);
 
-      hud.showResult(free ? "Built a road (free)" : "Built a road");
+      hud.showSuccess(free ? "Built a road (free)" : "Built a road");
 
       finish();
       onPlaced?.();
