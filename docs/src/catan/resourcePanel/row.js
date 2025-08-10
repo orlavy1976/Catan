@@ -1,4 +1,5 @@
 import { makeResIcon } from "./icon.js";
+import { makeDevCardIcon } from "./devCardIcon.js";
 import { 
   DIMENSIONS, 
   SPACING, 
@@ -16,8 +17,8 @@ const RES_ORDER = ["brick","wood","wheat","sheep","ore"];
 export function makePlayerRow(player) {
   const container = new PIXI.Container();
   
-  // Calculate row width to fit all content
-  const rowWidth = 70 + (5 * 48) + 10; // Player name + icons + extra padding
+  // Calculate row width to fit all content including dev card icon
+  const rowWidth = 70 + (5 * 48) + 40 + 10; // Player name + resource icons + dev card icon + extra padding
 
   // רקע/היילייט לשורה - using design system
   const highlight = new PIXI.Graphics();
@@ -53,6 +54,11 @@ export function makePlayerRow(player) {
     counters[k] = cell.setCount;
   });
 
+  // Development card icon
+  const devCardIcon = makeDevCardIcon();
+  container.addChild(devCardIcon.container);
+  counters.devCards = devCardIcon.setCount;
+
   // Position resource icons with consistent spacing
   const iconStartX = 70; // Fixed start position for alignment
   const iconSpacing = 48; // Consistent spacing between icons
@@ -62,13 +68,21 @@ export function makePlayerRow(player) {
     icon.container.y = 13; // Consistent vertical position
   });
 
+  // Position development card icon after resource icons
+  devCardIcon.container.x = iconStartX + (5 * iconSpacing) + 8; // After 5 resource icons with small gap
+  devCardIcon.container.y = 6; // Slightly higher to account for different icon size
+
   function setResource(kind, count) {
     counters[kind]?.(count);
+  }
+
+  function setDevCards(count) {
+    counters.devCards?.(count);
   }
   
   function setActive(active) {
     highlight.alpha = active ? ALPHA.highlight : 0;
   }
 
-  return { container, setResource, setActive };
+  return { container, setResource, setDevCards, setActive };
 }

@@ -51,9 +51,9 @@ export function createResourcePanel(app, state) {
   }
 
   function layout() {
-    // Calculate required width to fit all content
+    // Calculate required width to fit all content including dev cards
     const minWidth = DIMENSIONS.panel.resourceWidth;
-    const contentWidth = 70 + (5 * 48) + 20; // Player name area + 5 icons + padding
+    const contentWidth = 70 + (5 * 48) + 40 + 20; // Player name area + 5 resource icons + dev card icon + padding
     const width = Math.max(minWidth, contentWidth);
     
     const rowHeight = 44; // From row component
@@ -90,8 +90,27 @@ export function createResourcePanel(app, state) {
     players.forEach((p, idx) => {
       const row = rows[idx];
       if (!row) return;
+      
+      // Update resource counts
       RES_ORDER.forEach(k => row.setResource(k, p.resources?.[k] ?? 0));
+      
+      // Calculate and update development card count
+      const devCardCount = calculateDevCardCount(p);
+      row.setDevCards(devCardCount);
     });
+  }
+
+  /**
+   * Calculate total development cards for a player
+   * @param {object} player - Player object
+   * @returns {number} Total development card count
+   */
+  function calculateDevCardCount(player) {
+    if (!player.dev) return 0;
+    
+    return Object.values(player.dev).reduce((total, count) => {
+      return total + (count || 0);
+    }, 0);
   }
 
   function setCurrent(playerIndexZeroBased) {

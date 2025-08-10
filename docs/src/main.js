@@ -15,12 +15,15 @@ import { subscribe, patch } from "./game/stateStore.js";
 import { startBuildRoad } from "./game/buildRoad.js";
 import { startBuildSettlement } from "./game/buildSettlement.js";
 import { startBuildCity } from "./game/buildCity.js";
-import { startTradeMenu } from "./game/trade.js";
 import { rollDice } from "./catan/rules.js";
 import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
 
-// Dev cards (מודולריים)
-import { initDevDeck, startBuyDevCard, startPlayDev } from "./game/devcards/index.js";
+// New modern dialog system
+import { showTradeMenu } from "./game/dialogs/trade.js";
+import { showBuyDevCardDialog, showPlayDevCardDialog } from "./game/dialogs/devcards.js";
+
+// Dev cards (מודולריים) - keep for initialization
+import { initDevDeck } from "./game/devcards/index.js";
 
 // ניקוד + פאנל
 import { computeScores } from "./game/score.js";
@@ -76,22 +79,18 @@ const hud = createHUD(
   },
   // onTrade
   () => {
-    if (state.phase !== "play" || !state._hasRolled) return;
-    startTradeMenu({ app, hud, state, resPanel, graph });
+    console.log("🛍️ Trade");
+    showTradeMenu({ app, hud, state, resPanel, graph });
   },
   // onBuyDev
   () => {
-    if (state.phase !== "play" || !state._hasRolled) return;
-    startBuyDevCard({ app, hud, state, resPanel });
-    refreshHudAvailability();
-    refreshScores(); // ייתכן שקלף VP יעלה ל-10
+    console.log("🃏 Buy dev card");
+    showBuyDevCardDialog({ app, hud, state, resPanel });
   },
   // onPlayDev
   () => {
-    if (state.phase !== "play" || !state._hasRolled) return;
-    startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder });
-    refreshHudAvailability();
-    refreshScores();
+    console.log("🎯 Play dev card");
+    showPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder });
   }
 );
 

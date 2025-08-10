@@ -7,6 +7,7 @@ import {
   ALPHA, 
   TYPOGRAPHY, 
   DIMENSIONS, 
+  SPACING,
   EFFECTS, 
   UI_STYLES,
   getResourceColor,
@@ -183,7 +184,7 @@ export function centerContainer(child, parent) {
  * @param {number} gap - Gap between elements
  * @returns {number} Final Y position
  */
-export function stackVertically(elements, startY = 0, gap = DIMENSIONS.spacing.base) {
+export function stackVertically(elements, startY = 0, gap = SPACING.base) {
   let currentY = startY;
   
   elements.forEach(element => {
@@ -203,7 +204,7 @@ export function stackVertically(elements, startY = 0, gap = DIMENSIONS.spacing.b
  * @param {number} gap - Gap between elements
  * @returns {number} Final X position
  */
-export function arrangeHorizontally(elements, startX = 0, gap = DIMENSIONS.spacing.base) {
+export function arrangeHorizontally(elements, startX = 0, gap = SPACING.base) {
   let currentX = startX;
   
   elements.forEach(element => {
