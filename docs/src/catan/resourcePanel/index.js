@@ -1,25 +1,31 @@
 import { makePlayerRow } from "./row.js";
+import { 
+  DIMENSIONS, 
+  SPACING, 
+  Z_INDEX,
+  COLORS,
+  ALPHA
+} from "../../config/design.js";
+import { 
+  drawPanel, 
+  createSubtitle,
+  stackVertically 
+} from "../../utils/ui.js";
 
 const RES_ORDER = ["brick","wood","wheat","sheep","ore"];
 
 export function createResourcePanel(app, state) {
   const panel = new PIXI.Container();
-  panel.zIndex = 900;
+  panel.zIndex = Z_INDEX.panels;
   app.stage.addChild(panel);
   app.stage.sortableChildren = true;
 
-  // רקע
+  // רקע - using design system
   const bg = new PIXI.Graphics();
   panel.addChild(bg);
 
-  // כותרת
-  const title = new PIXI.Text("Players", {
-    fontFamily: "Georgia, serif",
-    fontSize: 18,
-    fill: 0xffffff,
-    stroke: 0x000000,
-    strokeThickness: 3,
-  });
+  // כותרת - using design system
+  const title = createSubtitle("Players");
   panel.addChild(title);
 
   // שורות שחקנים
@@ -30,30 +36,54 @@ export function createResourcePanel(app, state) {
     rows.forEach(r => panel.removeChild(r.container));
     rows.length = 0;
 
-    const rowGap = 56;
+    // Create rows for each player
     state.players.forEach((p, idx) => {
       const row = makePlayerRow(p);
-      row.container.y = 40 + idx * rowGap;
       panel.addChild(row.container);
       rows.push(row);
+    });
+
+    // Position rows manually with precise control
+    const startY = SPACING.panelPadding + (title.height || 20) + SPACING.sm;
+    rows.forEach((row, idx) => {
+      row.container.y = startY + (idx * (44 + SPACING.md));
     });
   }
 
   function layout() {
-    const width = 260;
-    const height = Math.max(40 + state.players.length * 56, 120);
-    bg.clear();
-    bg.beginFill(0x000000, 0.18);
-    bg.drawRoundedRect(0, 0, width, height, 16);
-    bg.endFill();
-    bg.lineStyle({ width: 1, color: 0xffffff, alpha: 0.12 });
-    bg.drawRoundedRect(0, 0, width, height, 16);
+    // Calculate required width to fit all content
+    const minWidth = DIMENSIONS.panel.resourceWidth;
+    const contentWidth = 70 + (5 * 48) + 20; // Player name area + 5 icons + padding
+    const width = Math.max(minWidth, contentWidth);
+    
+    const rowHeight = 44; // From row component
+    const titleHeight = title.height || 20; // Fallback for title height
+    const topPadding = SPACING.panelPadding;
+    const bottomPadding = SPACING.panelPadding;
+    const gapAfterTitle = SPACING.sm;
+    const rowGap = SPACING.md;
+    
+    // Calculate total content height more precisely
+    const contentHeight = titleHeight + gapAfterTitle + (state.players.length * rowHeight) + ((state.players.length - 1) * rowGap);
+    const totalHeight = topPadding + contentHeight + bottomPadding;
+    
+    const height = Math.max(totalHeight, 120);
 
-    title.x = 12; title.y = 8;
+    // Use design system for panel background
+    drawPanel(bg, width, height, {
+      color: COLORS.background.primary,
+      alpha: ALPHA.panelBackground,
+      borderRadius: DIMENSIONS.borderRadius.medium,
+      border: { width: 1, color: COLORS.ui.border, alpha: ALPHA.border }
+    });
 
-    const pad = 16;
-    panel.x = pad;
-    panel.y = 88; // מתחת לבאנר העליון
+    // Position title with design system spacing
+    title.x = SPACING.panelPadding; 
+    title.y = SPACING.panelPadding;
+
+    // Position panel at bottom-left corner of screen
+    panel.x = SPACING.containerPadding;
+    panel.y = app.renderer.height - height - SPACING.containerPadding;
   }
 
   function updateResources(players) {

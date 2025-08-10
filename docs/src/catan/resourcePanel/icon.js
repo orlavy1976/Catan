@@ -1,48 +1,61 @@
+import { 
+  DIMENSIONS, 
+  COLORS,
+  getResourceColor 
+} from "../../config/design.js";
+import { 
+  createStyledText 
+} from "../../utils/ui.js";
+
 const RES_LABELS = {
   brick: "Brick",
-  wood:  "Wood",
+  wood:  "Wood", 
   wheat: "Wheat",
   sheep: "Sheep",
   ore:   "Ore",
-};
-const RES_COLORS = {
-  brick: 0xb24d3d,
-  wood:  0x2a6e3a,
-  wheat: 0xd9bb49,
-  sheep: 0x7dbf6a,
-  ore:   0x6c707d,
 };
 
 export function makeResIcon(kind) {
   const container = new PIXI.Container();
 
+  // Icon background - using design system
   const icon = new PIXI.Graphics();
-  icon.beginFill(RES_COLORS[kind] ?? 0x888888, 0.95);
-  icon.drawRoundedRect(0, 0, 22, 18, 4);
+  icon.beginFill(getResourceColor(kind), 0.95);
+  icon.drawRoundedRect(
+    0, 0, 
+    DIMENSIONS.resourceIcon.width, 
+    DIMENSIONS.resourceIcon.height, 
+    DIMENSIONS.borderRadius.small
+  );
   icon.endFill();
-  icon.lineStyle({ width: 1, color: 0x000000, alpha: 0.25 });
-  icon.drawRoundedRect(0, 0, 22, 18, 4);
+  icon.lineStyle({ width: 1, color: COLORS.background.secondary, alpha: 0.25 });
+  icon.drawRoundedRect(
+    0, 0, 
+    DIMENSIONS.resourceIcon.width, 
+    DIMENSIONS.resourceIcon.height, 
+    DIMENSIONS.borderRadius.small
+  );
   container.addChild(icon);
 
-  const letter = new PIXI.Text((RES_LABELS[kind] ?? "?")[0], {
-    fontFamily: "Georgia, serif",
-    fontSize: 12,
-    fill: 0x101010,
-    stroke: 0xffffff,
-    strokeThickness: 2,
-  });
+  // Resource letter - using design system
+  const letter = createStyledText(
+    (RES_LABELS[kind] ?? "?")[0], 
+    'bodySmall', 
+    { 
+      fill: 0x101010,
+      stroke: 0xffffff,
+      strokeThickness: 2 
+    }
+  );
   letter.anchor.set(0.5, 0.5);
-  letter.x = 11; letter.y = 9;
+  letter.x = DIMENSIONS.resourceIcon.width / 2; 
+  letter.y = DIMENSIONS.resourceIcon.height / 2;
   container.addChild(letter);
 
-  const countText = new PIXI.Text("0", {
-    fontFamily: "Georgia, serif",
-    fontSize: 14,
-    fill: 0xffffff,
-    stroke: 0x000000,
-    strokeThickness: 3,
-  });
-  countText.x = 26; countText.y = 0;
+  // Resource count - using design system
+  const countText = createStyledText("0", 'counter');
+  countText.x = DIMENSIONS.resourceIcon.width + 4; 
+  countText.y = 0;
   container.addChild(countText);
 
   function setCount(n) {
