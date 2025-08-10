@@ -117,7 +117,7 @@ initDevDeck(state);
 // =====================
 // ===== DEBUG MODE ====
 // =====================
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 if (DEBUG_MODE) {
   debugInit();
