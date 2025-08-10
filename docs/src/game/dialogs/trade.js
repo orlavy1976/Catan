@@ -105,7 +105,7 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
     })),
     onChoice: (tradeData) => {
       executeBankTrade(currentPlayer, tradeData);
-      resPanel.refresh();
+      resPanel.updateResources(state.players);
       
       dialog.close();
       showTradeSuccessMessage(app, `Traded ${tradeData.rate} ${tradeData.give} for 1 ${tradeData.receive}!`);
@@ -700,16 +700,17 @@ function showTradeAcceptedDialog({ app, hud, state, resPanel, currentPlayer, tar
   const continueButton = makeButton("Continue", 120, 'primary');
   continueButton.container.x = (dialog.contentWidth - 120) / 2;
   continueButton.container.y = currentY;
+  
   continueButton.onClick(() => {
     // Execute the trade
     executePlayerTrade(currentPlayer, targetPlayer, tradeOffer);
-    resPanel.refresh();
+    resPanel.updateResources(state.players);
     
     // Close dialog and re-enable HUD
     dialog.close();
     setTimeout(() => {
       enableHUD(hud);
-    }, 100); // Small delay to ensure dialog closes first
+    }, 100);
   });
 
   dialog.content.addChild(continueButton.container);
