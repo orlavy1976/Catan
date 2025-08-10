@@ -123,29 +123,69 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
 
   // Layout function
   function layout() {
-    const colX = app.renderer.width - pad - colWidth;
-    let cy = pad;
+    const screenWidth = app.renderer.width;
+    const screenHeight = app.renderer.height;
+    
+    // Responsive column positioning
+    const scaleFactor = Math.min(1, screenWidth / 1200);
+    const responsiveColWidth = Math.max(180, colWidth * scaleFactor);
+    const responsivePad = Math.max(12, pad * scaleFactor);
+    const responsiveGap = Math.max(8, gap * scaleFactor);
+    const responsiveGapLarge = Math.max(12, gapLarge * scaleFactor);
+    
+    // Position action buttons column on the right
+    const colX = screenWidth - responsivePad - responsiveColWidth;
+    let cy = responsivePad;
 
-    // Position dice
-    const diceW = 150;
-    dice.container.x = colX + Math.round((colWidth - diceW) / 2);
+    // Position dice with responsive sizing
+    const diceW = Math.max(120, 150 * scaleFactor);
+    dice.container.x = colX + Math.round((responsiveColWidth - diceW) / 2);
     dice.container.y = cy;
-    cy += 120 + gapLarge;
+    cy += Math.max(100, 120 * scaleFactor) + responsiveGapLarge;
 
-    // Position buttons with Material spacing
-    colButtons.forEach(btn => {
-      const x = colX + Math.round((colWidth - btn.width) / 2);
+    // Position buttons with responsive Material spacing
+    colButtons.forEach((btn, index) => {
+      const buttonWidth = Math.max(160, btn.width * scaleFactor);
+      const x = colX + Math.round((responsiveColWidth - buttonWidth) / 2);
       btn.container.x = x;
       btn.container.y = cy;
-      cy += btn.height + gap;
+      
+      // Scale button size if needed
+      const buttonScale = Math.max(0.8, scaleFactor);
+      btn.container.scale.set(buttonScale);
+      
+      cy += Math.max(40, btn.height * buttonScale) + responsiveGap;
     });
 
-    // Position text elements
-    bannerText.x = pad;
-    bannerText.y = pad;
+    // Position banner text responsively
+    bannerText.x = responsivePad;
+    bannerText.y = responsivePad;
+    
+    // Responsive text sizing
+    const textScale = Math.max(0.8, scaleFactor);
+    bannerText.scale.set(textScale);
+    
+    // Ensure buttons don't go off-screen on short screens
+    if (cy > screenHeight - 50) {
+      const overflow = cy - (screenHeight - 50);
+      const buttonCount = colButtons.length;
+      const spacingReduction = Math.min(responsiveGap * 0.5, overflow / buttonCount);
+      
+      // Re-layout with reduced spacing
+      cy = responsivePad + Math.max(100, 120 * scaleFactor) + responsiveGapLarge;
+      colButtons.forEach((btn, index) => {
+        const buttonWidth = Math.max(160, btn.width * scaleFactor);
+        const x = colX + Math.round((responsiveColWidth - buttonWidth) / 2);
+        btn.container.x = x;
+        btn.container.y = cy;
+        cy += Math.max(40, btn.height * Math.max(0.8, scaleFactor)) + (responsiveGap - spacingReduction);
+      });
+    }
     
     // Layout notification system
     notifications.layout();
+    
+    console.log("🎨 HUD layout - Screen:", `${screenWidth}x${screenHeight}`, "Scale:", scaleFactor.toFixed(2), "ColX:", colX);
   }
 
   // Initial layout

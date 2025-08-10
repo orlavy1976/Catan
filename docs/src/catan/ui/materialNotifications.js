@@ -189,19 +189,19 @@ export function createMaterialNotificationSystem(app) {
       size: 'small'
     });
     clearButton.container.x = PANEL_WIDTH - MATERIAL_SPACING[3] - 80;
-    clearButton.container.y = MATERIAL_SPACING[2];
+    clearButton.container.y = MATERIAL_SPACING[3]; // Align with header
     clearButton.onClick(() => clearHistory());
     historyPanel.addChild(clearButton.container);
     
     // Scrollable container for notifications
     historyContainer = new PIXI.Container();
     historyContainer.x = MATERIAL_SPACING[2];
-    historyContainer.y = MATERIAL_SPACING[6];
+    historyContainer.y = MATERIAL_SPACING[8]; // More space below header and clear button
     
     // Create mask for scrolling
     const mask = new PIXI.Graphics();
     mask.beginFill(0xFFFFFF);
-    mask.drawRect(0, MATERIAL_SPACING[6], PANEL_WIDTH, PANEL_MAX_HEIGHT - MATERIAL_SPACING[8]);
+    mask.drawRect(0, MATERIAL_SPACING[8], PANEL_WIDTH, PANEL_MAX_HEIGHT - MATERIAL_SPACING[10]);
     mask.endFill();
     historyPanel.addChild(mask);
     historyContainer.mask = mask;
@@ -630,42 +630,88 @@ export function createMaterialNotificationSystem(app) {
    * Layout all notification elements
    */
   function layout() {
-    const pad = MATERIAL_SPACING[3];
+    const screenWidth = app.renderer.width;
+    const screenHeight = app.renderer.height;
     
-    console.log("🔔 Notification layout called", {
-      appWidth: app.renderer.width,
-      appHeight: app.renderer.height,
-      notificationWidth: NOTIFICATION_WIDTH,
-      panelWidth: PANEL_WIDTH
+    // Responsive padding and sizing
+    const basePad = MATERIAL_SPACING[3];
+    const scaleFactor = Math.min(1, screenWidth / 1200);
+    const pad = Math.max(12, basePad * scaleFactor);
+    
+    // Responsive panel dimensions
+    const responsiveNotificationWidth = Math.max(280, NOTIFICATION_WIDTH * scaleFactor);
+    const responsivePanelWidth = Math.max(300, PANEL_WIDTH * scaleFactor);
+    const responsiveActionHeight = Math.max(40, ACTION_PANEL_HEIGHT * scaleFactor);
+    const responsiveNotificationHeight = Math.max(50, NOTIFICATION_HEIGHT * scaleFactor);
+    
+    console.log("🔔 Responsive notification layout", {
+      screenSize: `${screenWidth}x${screenHeight}`,
+      scaleFactor: scaleFactor.toFixed(2),
+      responsiveWidths: { notification: responsiveNotificationWidth, panel: responsivePanelWidth }
     });
     
     // Action instruction panel at top left (under banner text)
     actionInstructionPanel.x = pad;
-    actionInstructionPanel.y = pad * 10; // Below "Turn X - Player X" text
+    actionInstructionPanel.y = pad * 6; // Responsive offset below banner
+    
+    // Resize action panel background if needed
+    if (actionInstructionPanel.children[0] && actionInstructionPanel.children[0].clear) {
+      const bg = actionInstructionPanel.children[0];
+      bg.clear();
+      bg.beginFill(MATERIAL_COLORS.surfaceContainer, 0.9);
+      bg.drawRoundedRect(0, 0, responsiveNotificationWidth, responsiveActionHeight, MATERIAL_SPACING[2]);
+      bg.endFill();
+    }
     
     // Main notification panel below action panel
     mainNotificationCard.x = pad;
-    mainNotificationCard.y = actionInstructionPanel.y + ACTION_PANEL_HEIGHT + MATERIAL_SPACING[2];
+    mainNotificationCard.y = actionInstructionPanel.y + responsiveActionHeight + MATERIAL_SPACING[2];
     
-    // History panel at top right
-    historyPanel.x = app.renderer.width - PANEL_WIDTH - pad;
-    historyPanel.y = pad;
-    
-    // Toggle button at top left (below notification panels)
-    toggleButton.container.x = pad;
-    toggleButton.container.y = mainNotificationCard.y + NOTIFICATION_HEIGHT + MATERIAL_SPACING[2];
-    
-    // Make sure it's on top of other elements
-    toggleButton.container.zIndex = 1000;
-    
-    // Update button text with notification count
-    if (toggleButton.buttonText) {
-      toggleButton.buttonText.text = `📋 History (${notifications.length})`;
+    // Resize main notification background if needed
+    if (mainNotificationCard.children[0] && mainNotificationCard.children[0].clear) {
+      const bg = mainNotificationCard.children[0];
+      bg.clear();
+      bg.beginFill(MATERIAL_COLORS.surfaceContainer, 0.9);
+      bg.drawRoundedRect(0, 0, responsiveNotificationWidth, responsiveNotificationHeight, MATERIAL_SPACING[2]);
+      bg.endFill();
     }
     
-    console.log("🔔 Action panel positioned at:", actionInstructionPanel.x, actionInstructionPanel.y);
-    console.log("🔔 Main notification positioned at:", mainNotificationCard.x, mainNotificationCard.y);
-    console.log("🔔 Toggle button positioned at:", toggleButton.container.x, toggleButton.container.y);
+    // History panel positioning - responsive to screen size
+    if (screenWidth > 1000) {
+      // Large screens: top right
+      historyPanel.x = screenWidth - responsivePanelWidth - pad;
+      historyPanel.y = pad;
+    } else {
+      // Smaller screens: below notifications on left
+      historyPanel.x = pad;
+      historyPanel.y = mainNotificationCard.y + responsiveNotificationHeight + MATERIAL_SPACING[3];
+    }
+    
+    // Resize history panel if needed
+    if (historyPanel.background && historyPanel.background.clear) {
+      const bg = historyPanel.background;
+      const panelHeight = Math.min(500 * scaleFactor, screenHeight * 0.6);
+      bg.clear();
+      bg.beginFill(MATERIAL_COLORS.surface, 0.95);
+      bg.drawRoundedRect(0, 0, responsivePanelWidth, panelHeight, MATERIAL_SPACING[3]);
+      bg.endFill();
+    }
+    
+    // Toggle button positioning
+    const toggleY = screenWidth > 1000 
+      ? mainNotificationCard.y + responsiveNotificationHeight + MATERIAL_SPACING[2]
+      : historyPanel.y + 400 + MATERIAL_SPACING[2]; // Below history on small screens
+      
+    toggleButton.container.x = pad;
+    toggleButton.container.y = toggleY;
+    toggleButton.container.zIndex = 1000;
+    
+    // Ensure panels don't go off-screen
+    if (historyPanel.y + 400 > screenHeight) {
+      historyPanel.y = Math.max(pad, screenHeight - 450);
+    }
+    
+    console.log("📱 Layout complete - Notification:", { x: mainNotificationCard.x, y: mainNotificationCard.y }, "History:", { x: historyPanel.x, y: historyPanel.y });
   }
   
   // Easing functions

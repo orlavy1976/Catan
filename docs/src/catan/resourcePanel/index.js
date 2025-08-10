@@ -51,39 +51,60 @@ export function createResourcePanel(app, state) {
   }
 
   function layout() {
+    const screenWidth = app.renderer.width;
+    const screenHeight = app.renderer.height;
+    
+    // Responsive scaling
+    const scaleFactor = Math.min(1, screenWidth / 1200);
+    const responsiveSpacing = Math.max(8, SPACING.containerPadding * scaleFactor);
+    
     // Calculate required width to fit all content including dev cards
-    const minWidth = DIMENSIONS.panel.resourceWidth;
-    const contentWidth = 70 + (5 * 48) + 40 + 20; // Player name area + 5 resource icons + dev card icon + padding
+    const minWidth = DIMENSIONS.panel.resourceWidth * scaleFactor;
+    const contentWidth = (70 + (5 * 48) + 40 + 20) * scaleFactor; // Player name area + 5 resource icons + dev card icon + padding
     const width = Math.max(minWidth, contentWidth);
     
-    const rowHeight = 44; // From row component
-    const titleHeight = title.height || 20; // Fallback for title height
-    const topPadding = SPACING.panelPadding;
-    const bottomPadding = SPACING.panelPadding;
-    const gapAfterTitle = SPACING.sm;
-    const rowGap = SPACING.md;
+    const rowHeight = Math.max(35, 44 * scaleFactor); // From row component
+    const titleHeight = (title.height || 20) * scaleFactor; // Fallback for title height
+    const topPadding = SPACING.panelPadding * scaleFactor;
+    const bottomPadding = SPACING.panelPadding * scaleFactor;
+    const gapAfterTitle = SPACING.sm * scaleFactor;
+    const rowGap = SPACING.md * scaleFactor;
     
     // Calculate total content height more precisely
     const contentHeight = titleHeight + gapAfterTitle + (state.players.length * rowHeight) + ((state.players.length - 1) * rowGap);
     const totalHeight = topPadding + contentHeight + bottomPadding;
     
-    const height = Math.max(totalHeight, 120);
+    const height = Math.max(totalHeight, 120 * scaleFactor);
 
     // Use design system for panel background
     drawPanel(bg, width, height, {
       color: COLORS.background.primary,
       alpha: ALPHA.panelBackground,
-      borderRadius: DIMENSIONS.borderRadius.medium,
+      borderRadius: DIMENSIONS.borderRadius.medium * scaleFactor,
       border: { width: 1, color: COLORS.ui.border, alpha: ALPHA.border }
     });
 
     // Position title with design system spacing
-    title.x = SPACING.panelPadding; 
-    title.y = SPACING.panelPadding;
+    title.x = SPACING.panelPadding * scaleFactor; 
+    title.y = SPACING.panelPadding * scaleFactor;
+    
+    // Scale title text
+    title.scale.set(scaleFactor);
 
-    // Position panel at bottom-left corner of screen
-    panel.x = SPACING.containerPadding;
-    panel.y = app.renderer.height - height - SPACING.containerPadding;
+    // Position panel responsively at bottom-left corner
+    let panelX = responsiveSpacing;
+    let panelY = screenHeight - height - responsiveSpacing;
+    
+    // Adjust for smaller screens to prevent overlap with action buttons
+    if (screenWidth < 1000) {
+      panelX = Math.min(responsiveSpacing, 10);
+      panelY = Math.max(panelY, screenHeight * 0.6); // Keep in bottom 40%
+    }
+    
+    panel.x = panelX;
+    panel.y = panelY;
+    
+    console.log("📊 Resource panel layout - Size:", `${width.toFixed(0)}x${height.toFixed(0)}`, "Position:", `${panelX.toFixed(0)},${panelY.toFixed(0)}`);
   }
 
   function updateResources(players) {

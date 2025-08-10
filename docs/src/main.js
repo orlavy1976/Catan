@@ -37,24 +37,59 @@ const { app } = initApp();
 // ---------- Board ----------
 const { layout, boardC, tileSprites, axials, robberSpriteRef } = buildBoard(app, root);
 
-// Fit board to screen
+// Fit board to screen with responsive UI support
 function layoutBoard() {
   const xs = tileSprites.map(t => t.center.x);
   const ys = tileSprites.map(t => t.center.y);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const pad = 120;
+  
+  // Calculate available space considering UI panels
+  const uiPadding = {
+    left: 380,    // Space for notification panels + padding
+    right: 240,   // Space for action buttons + padding  
+    top: 60,      // Space for top elements
+    bottom: 120   // Space for resource panels + padding
+  };
+  
+  // Responsive adjustments for smaller screens
+  const screenWidth = app.renderer.width;
+  const screenHeight = app.renderer.height;
+  
+  if (screenWidth < 1200) {
+    uiPadding.left = Math.min(320, screenWidth * 0.25);
+    uiPadding.right = Math.min(200, screenWidth * 0.2);
+  }
+  
+  if (screenHeight < 800) {
+    uiPadding.top = Math.min(40, screenHeight * 0.05);
+    uiPadding.bottom = Math.min(80, screenHeight * 0.1);
+  }
+  
+  console.log("📐 Layout board with UI padding:", uiPadding, "Screen:", screenWidth, "x", screenHeight);
+  
+  const availableWidth = screenWidth - uiPadding.left - uiPadding.right;
+  const availableHeight = screenHeight - uiPadding.top - uiPadding.bottom;
+  
+  const pad = 60; // Internal board padding
   const bw = (maxX - minX) + pad * 2;
   const bh = (maxY - minY) + pad * 2;
-  const sx = app.renderer.width / bw;
-  const sy = app.renderer.height / bh;
-  const s = Math.min(sx, sy);
+  
+  const sx = availableWidth / bw;
+  const sy = availableHeight / bh;
+  const s = Math.min(sx, sy, 1.2); // Max scale limit to prevent over-sizing
+  
+  // Center the board in the available space
+  const boardWidth = bw * s;
+  const boardHeight = bh * s;
+  
   boardC.scale.set(s);
-  boardC.x = (app.renderer.width - bw * s) / 2 - (minX - pad) * s;
-  boardC.y = (app.renderer.height - bh * s) / 2 - (minY - pad) * s;
+  boardC.x = uiPadding.left + (availableWidth - boardWidth) / 2 - (minX - pad) * s;
+  boardC.y = uiPadding.top + (availableHeight - boardHeight) / 2 - (minY - pad) * s;
+  
+  console.log("📐 Board positioned at:", boardC.x, boardC.y, "Scale:", s);
 }
 layoutBoard();
-window.addEventListener("resize", layoutBoard);
 
 // ---------- UI ----------
 const hud = createMaterialHUD(
@@ -130,6 +165,42 @@ const builder = makeBuilder(app, boardC, graph, state);
 initDevDeck(state);
 
 // =====================
+// ===== RESPONSIVE DESIGN ====
+// =====================
+
+// Enhanced responsive resize handling
+function handleResize() {
+  console.log("🔄 Window resize detected:", app.renderer.width, "x", app.renderer.height);
+  
+  // Update app renderer size
+  app.renderer.resize(window.innerWidth, window.innerHeight);
+  
+  // Layout board first (affects available space for UI)
+  layoutBoard();
+  
+  // Layout UI panels with delay to ensure board is positioned
+  requestAnimationFrame(() => {
+    // Resource panel layout
+    resPanel?.layout?.();
+    
+    // HUD layout (includes action buttons and dice)
+    hud?.layout?.();
+    
+    // Score panel layout if it has one
+    scorePanel?.layout?.();
+    
+    console.log("✅ Responsive layout complete");
+  });
+}
+
+// Debounced resize handler to prevent excessive layout calls
+let resizeTimeout;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(handleResize, 100); // 100ms debounce
+});
+
+// =====================
 // ===== DEBUG MODE ====
 // =====================
 const DEBUG_MODE = true;
@@ -177,6 +248,14 @@ function onRolled(evt) {
   
   const sum = roll?.sum ?? 0;
   state._hasRolled = true;
+
+  // Add dice roll to notification history
+  if (roll?.d1 != null && roll?.d2 != null) {
+    const diceEmoji = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    const d1Emoji = diceEmoji[roll.d1 - 1] || '🎲';
+    const d2Emoji = diceEmoji[roll.d2 - 1] || '🎲';
+    hud.notifications.info(`${d1Emoji} ${d2Emoji} Rolled ${roll.d1} + ${roll.d2} = ${sum}`, 3000);
+  }
 
   if (sum === 7) {
     state.phase = "discard";
