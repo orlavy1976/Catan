@@ -16,7 +16,7 @@ export function playKnight({ app, hud, state, resPanel, boardC, tileSprites, rob
   toggleHud(hud, false);
 
   enterRobberMove({ app, boardC, hud, state, tileSprites, robberSpriteRef, graph, layout, resPanel }, () => {
-    state.phase = "play";
+    patch(s => { s.phase = "play"; });
     hud.setBottom("You may build, trade, or end the turn");
     // Use proper resource validation instead of enabling everything
     refreshHudAvailability();
