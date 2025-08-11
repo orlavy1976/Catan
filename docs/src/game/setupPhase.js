@@ -5,14 +5,16 @@ import { patch } from "./stateStore.js";
 function colorName(idx){ return ["Red","Blue","Orange","Green"][idx] || "P"; }
 
 export function startSetupPhase({
-  app, boardC, hud, resPanel, graph, builder, layout, state, onFinish
+  app, boardC, hud, resPanel, graph, builder, layout, state, onFinish, continueFromSave = false
 }) {
-  // מצב פתיחה של השלב
-  patch(s => {
-    s.phase = "setup";
-    s.setup.placing = "settlement";
-    s.setup.lastSettlementVertex = null;
-  });
+  // מצב פתיחה של השלב (רק אם לא ממשיכים מעדכון שמור)
+  if (!continueFromSave) {
+    patch(s => {
+      s.phase = "setup";
+      s.setup.placing = "settlement";
+      s.setup.lastSettlementVertex = null;
+    });
+  }
 
   hud.setBanner(`Setup — Player ${state.currentPlayer} (${colorName(currentPlayer().colorIdx)})`);
   hud.setBottom(`Setup: Place Settlement`);
@@ -28,6 +30,18 @@ export function startSetupPhase({
   const interactiveLayer = new PIXI.Container();
   boardC.addChild(interactiveLayer);
 
+  // אתחול רכיבי המצב מהנתונים הקיימים (ליעדכונים שמורים)
+  state.players.forEach(player => {
+    player.settlements?.forEach(vId => {
+      occupiedVertices.add(vId);
+      builder.placeSettlement(vId, player.colorIdx);
+    });
+    player.roads?.forEach(eId => {
+      occupiedEdges.add(eId);
+      builder.placeRoad(eId, player.colorIdx);
+    });
+  });
+
   function clearInteractions(){
     interactiveLayer.removeChildren();
     builder.clearGhosts();
@@ -35,6 +49,20 @@ export function startSetupPhase({
 
   function currentPlayer(s = state) {
     return s.players[s.currentPlayer - 1];
+  }
+
+  // תחליף לפנייה ראשונה - בדיקה איך לוגיקה להמשך מצב שמור
+  if (continueFromSave && state.setup.placing) {
+    if (state.setup.placing === "settlement") {
+      hud.setBottom(`Setup: Place Settlement`);
+      drawSettlementChoices();
+    } else if (state.setup.placing === "road") {
+      hud.setBottom(`Setup: Place Road`);
+      drawRoadChoices();
+    }
+  } else {
+    // ללא עדכון שמור - התחלה רגילה
+    drawSettlementChoices();
   }
 
   // סדר נחש: 1→2→3→4→4→3→2→1

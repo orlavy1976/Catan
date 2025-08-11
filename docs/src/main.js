@@ -257,10 +257,34 @@ function initializeGame() {
           resPanel.setCurrent(state.currentPlayer - 1);
           resPanel.updateResources(state.players);
           
-          // Update HUD banner based on loaded state
+          // Update HUD banner and continue the appropriate phase
           if (state.phase === "setup") {
             hud.setBanner(`Setup Phase — Player ${state.currentPlayer}`);
             hud.setBottom("Place your settlement and road");
+            
+            // Continue the setup phase from where it was saved
+            startSetupPhase({
+              app, boardC, hud, resPanel, graph, builder, layout, state,
+              continueFromSave: true,
+              onFinish: () => {
+                state.phase = "play";
+                state.turn = 1;
+                state.currentPlayer = 1;
+                state._hasRolled = false;
+                hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
+                hud.setBottom(`Ready: Roll Dice`);
+                
+                // Welcome notification for completed setup
+                hud.showInfo("🎲 Setup complete! Roll dice to begin your turn.", 6000);
+                
+                refreshHudAvailability();
+                refreshScores();
+                resPanel.setCurrent(state.currentPlayer - 1);
+                
+                // Save state after setup completion
+                saveGameState();
+              }
+            });
           } else {
             hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
             hud.setBottom(state._hasRolled ? "Build, trade, or end turn" : "Roll dice to start");
