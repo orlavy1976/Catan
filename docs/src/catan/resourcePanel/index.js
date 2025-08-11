@@ -2,6 +2,9 @@ import { makePlayerRow } from "./row.js";
 import { 
   createMaterialPanel
 } from "../../utils/materialPanel.js";
+import { 
+  MATERIAL_SPACING
+} from "../../config/materialDesign.js";
 
 const RES_ORDER = ["brick","wood","wheat","sheep","ore"];
 
@@ -34,16 +37,12 @@ export function createResourcePanel(app, state) {
     panel.layout();
     
     // Now resize all rows to fit panel width
-    const contentWidth = panel.width - (16 * 2); // Account for panel padding
+    const contentWidth = panel.width - (MATERIAL_SPACING[4] * 2); // Account for panel padding
     
     rows.forEach(row => {
-      if (row.container && row.container.width) {
-        // Scale the row container to fit if needed
-        const currentWidth = row.container.width;
-        if (currentWidth > contentWidth) {
-          const scale = contentWidth / currentWidth;
-          row.container.scale.set(scale);
-        }
+      if (row.resize) {
+        // Use the custom resize function that handles icon positioning
+        row.resize(contentWidth);
       }
     });
   }

@@ -6,41 +6,23 @@ import {
 } from "../../config/materialDesign.js";
 import { PLAYER_COLORS } from "../../config/constants.js";
 import { 
-  createMaterialText
-} from "../../utils/materialUI.js";
+  createMaterialRow
+} from "../../utils/materialPanel.js";
 
 const RES_ORDER = ["brick","wood","wheat","sheep","ore"];
 
 export function makePlayerRow(player) {
-  const container = new PIXI.Container();
+  // Create the base Material Design row
+  const materialRow = createMaterialRow({
+    text: `P${player.id}`,
+    secondaryText: "", // Will be updated with resource counts
+    color: PLAYER_COLORS[player.colorIdx ?? 0],
+    showBadge: true,
+    height: 60 // Taller row to accommodate resource icons
+  });
+
+  const container = materialRow.container;
   
-  // Calculate row width with Material Design spacing
-  const rowWidth = 80 + (5 * 52) + 50 + MATERIAL_SPACING[3]; // More generous spacing
-
-  // Row background/highlight - Material Design state layer
-  const highlight = new PIXI.Graphics();
-  highlight.beginFill(MATERIAL_COLORS.primary[500], 0.08); // Material state layer
-  highlight.drawRoundedRect(0, 0, rowWidth, 48, 8); // Material Design corner radius
-  highlight.endFill();
-  highlight.alpha = 0;
-  container.addChild(highlight);
-
-  // Player color badge - Material Design
-  const badge = new PIXI.Graphics();
-  badge.beginFill(PLAYER_COLORS[player.colorIdx ?? 0], 1);
-  badge.drawCircle(0, 0, 8); // Material Design size
-  badge.endFill();
-  badge.x = MATERIAL_SPACING[4]; // 16px from edge
-  badge.y = 24; // Center vertically in 48px row
-  container.addChild(badge);
-
-  // Player name - Material Design typography
-  const nameText = createMaterialText(`P${player.id}`, 'labelLarge');
-  nameText.style.fill = MATERIAL_COLORS.neutral[100]; // Light text
-  nameText.x = MATERIAL_SPACING[4] + 8 + MATERIAL_SPACING[2]; // Badge + radius + gap
-  nameText.y = MATERIAL_SPACING[2]; // Consistent with Material spacing
-  container.addChild(nameText);
-
   // Resource icons with improved positioning
   const resourceIcons = [];
   const counters = {}; 
@@ -59,28 +41,72 @@ export function makePlayerRow(player) {
 
   // Position resource icons with Material Design spacing
   const iconStartX = 80; // Fixed start position after player name area
-  const iconSpacing = 52; // Material Design touch target size
+  const iconSpacing = 40; // Adjusted spacing for smaller icons
   
   resourceIcons.forEach((icon, idx) => {
     icon.container.x = iconStartX + (idx * iconSpacing);
-    icon.container.y = 12; // Center in 48px row (48-24)/2 = 12
+    icon.container.y = 20; // Center in 60px row
   });
 
   // Position development card icon after resource icons
   devCardIcon.container.x = iconStartX + (5 * iconSpacing) + MATERIAL_SPACING[2];
-  devCardIcon.container.y = 8; // Slightly higher for different icon size
+  devCardIcon.container.y = 18; // Slightly higher for different icon size
+
+  // Track resource counts for secondary text
+  const resourceCounts = {};
+  let devCardCount = 0;
+  
+  // Initialize resource counts
+  RES_ORDER.forEach(k => {
+    resourceCounts[k] = 0;
+  });
 
   function setResource(kind, count) {
     counters[kind]?.(count);
+    resourceCounts[kind] = count;
+    updateSecondaryText();
   }
 
   function setDevCards(count) {
     counters.devCards?.(count);
+    devCardCount = count;
+    updateSecondaryText();
   }
   
   function setActive(active) {
-    highlight.alpha = active ? 1 : 0; // Full state layer when active
+    materialRow.setActive(active);
   }
 
-  return { container, setResource, setDevCards, setActive };
+  function updateSecondaryText() {
+    // Create a summary text showing total resources
+    const totalResources = Object.values(resourceCounts).reduce((sum, count) => sum + (count || 0), 0);
+    const summary = `${totalResources} resources, ${devCardCount} dev cards`;
+    materialRow.setSecondaryText(summary);
+  }
+
+  // Custom resize function that also handles icon positioning
+  function resize(width) {
+    materialRow.resize(width);
+    
+    // Adjust icon spacing based on available width
+    const availableWidth = width - iconStartX - 60; // Leave space for dev card
+    const adjustedSpacing = Math.min(40, availableWidth / 5);
+    
+    resourceIcons.forEach((icon, idx) => {
+      icon.container.x = iconStartX + (idx * adjustedSpacing);
+    });
+    
+    devCardIcon.container.x = iconStartX + (5 * adjustedSpacing) + MATERIAL_SPACING[2];
+  }
+
+  // Initialize secondary text
+  updateSecondaryText();
+
+  return { 
+    container, 
+    setResource, 
+    setDevCards, 
+    setActive,
+    resize: resize
+  };
 }
