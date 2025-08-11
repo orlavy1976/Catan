@@ -4,10 +4,9 @@
 import { 
   createMaterialDialog, 
   createMaterialChoice,
-  createMaterialConfirm,
   MATERIAL_DIALOG_TYPES 
 } from '../../utils/materialDialog.js';
-import { createMaterialButton, makeButton } from '../../catan/ui/materialButton.js';
+import { makeButton } from '../../catan/ui/materialButton.js';
 import { 
   createMaterialText, 
   createMaterialHeadline 

@@ -5,7 +5,6 @@
 import { 
   createMaterialDialog,
   createMaterialChoice,
-  createMaterialConfirm,
   MATERIAL_DIALOG_TYPES 
 } from '../../utils/materialDialog.js';
 

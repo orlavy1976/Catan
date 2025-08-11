@@ -382,8 +382,10 @@ function refreshScores() {
 // ===== DEBUG HELPERS =====
 // ==========================
 function debugInit() {
+  console.log("🐛 DEBUG: Starting debugInit");
   patch(s => {
-    s.players.forEach(p => {
+    s.players.forEach((p, index) => {
+      console.log(`🐛 DEBUG: Processing player ${index}, initial dev cards:`, p.dev);
       for (const k of Object.keys(p.resources)) p.resources[k] = 5;
       p.settlements = p.settlements || [];
       p.cities = p.cities || [];
@@ -391,6 +393,17 @@ function debugInit() {
       p.dev = p.dev || { knight:0, vp:0, year_of_plenty:0, monopoly:0, road_building:0 };
       p.devNew = p.devNew || { knight:0, vp:0, year_of_plenty:0, monopoly:0, road_building:0 };
       p.knightsPlayed = p.knightsPlayed || 0;
+      
+      // Give first player (index 0) all development card types for testing
+      if (index === 0) {
+        console.log("🐛 DEBUG: Setting dev cards for first player");
+        p.dev.knight = 1;           // Knight cards
+        p.dev.vp = 0;               // Victory point cards
+        p.dev.year_of_plenty = 1;   // Year of plenty cards
+        p.dev.monopoly = 1;         // Monopoly cards
+        p.dev.road_building = 1;    // Road building cards
+        console.log("🐛 DEBUG: First player dev cards after setting:", p.dev);
+      }
     });
   });
 
@@ -440,6 +453,10 @@ function debugInit() {
   refreshHudAvailability();
   refreshScores();
   resPanel.setCurrent(state.currentPlayer - 1);
+  
+  // Force update resource panel to show debug dev cards
+  resPanel.updateResources(state.players);
+  console.log("🐛 DEBUG: debugInit complete, final first player dev cards:", state.players[0].dev);
 }
 
 function computeInitialResourcesForVertex(vertexId) {

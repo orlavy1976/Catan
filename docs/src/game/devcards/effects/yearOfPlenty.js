@@ -1,48 +1,56 @@
-import { createMaterialChoice } from "../../../utils/materialDialog.js";
+import { createResourceDialog } from "../../../utils/dialog.js";
 import { patch } from "../../stateStore.js";
 
 export function playYearOfPlenty({ app, hud, state, resPanel, refreshScores }) {
-  const resources = ["brick", "wood", "wheat", "sheep", "ore"];
+  console.log("🎴 Year of Plenty: playYearOfPlenty called");
+  
   let selectedResources = [];
-
-  function selectResource() {
-    if (selectedResources.length >= 2) {
-      completeYearOfPlenty();
-      return;
-    }
-
-    const dialog = createMaterialChoice(app, {
-      title: `Year of Plenty (${selectedResources.length + 1}/2)`,
-      message: selectedResources.length === 0 
-        ? "Choose your first resource from the bank:"
-        : `Selected: ${selectedResources[0]}. Choose your second resource:`,
-      choices: resources.map(resource => ({
-        label: resource.charAt(0).toUpperCase() + resource.slice(1),
-        action: () => {
-          selectedResources.push(resource);
-          selectResource(); // Recursively select next resource
-        }
-      }))
+  
+  function selectFirstResource() {
+    const dialog = createResourceDialog(app, {
+      title: "Year of Plenty (1/2)",
+      subtitle: "Choose your first resource from the bank:",
+      resources: ["brick", "wood", "wheat", "sheep", "ore"],
+      onResourceSelect: (resource) => {
+        selectedResources = [resource];
+        selectSecondResource();
+      }
     });
-
+    
     dialog.show();
   }
-
-  function completeYearOfPlenty() {
-    // Give resources to player using patch for proper state management
+  
+  function selectSecondResource() {
+    const dialog = createResourceDialog(app, {
+      title: "Year of Plenty (2/2)",
+      subtitle: `First: ${selectedResources[0]}. Choose your second resource:`,
+      resources: ["brick", "wood", "wheat", "sheep", "ore"],
+      onResourceSelect: (resource) => {
+        selectedResources.push(resource);
+        executeYearOfPlenty();
+      }
+    });
+    
+    dialog.show();
+  }
+  
+  function executeYearOfPlenty() {
+    // Use patch to ensure reactive updates
     patch(s => {
-      const player = s.players[s.currentPlayer - 1];
+      const me = s.players[s.currentPlayer - 1];
+      
       selectedResources.forEach(resource => {
-        player.resources[resource] = (player.resources[resource] || 0) + 1;
+        me.resources[resource] = (me.resources[resource] || 0) + 1;
       });
     });
 
     // Update UI
     resPanel?.updateResources?.(state.players);
     refreshScores?.();
+    
+    // Show result
     hud.showResult(`Year of Plenty: received ${selectedResources.join(' and ')}`);
   }
-
-  // Start the selection process
-  selectResource();
+  
+  selectFirstResource();
 }

@@ -84,7 +84,7 @@ export function drawResourceChip(graphics, width, height) {
  */
 export function drawModalOverlay(graphics, screenWidth, screenHeight) {
   graphics.clear();
-  graphics.beginFill(COLORS.background.overlay, ALPHA.overlay);
+  graphics.beginFill(COLORS.background.overlay, 0.5); // Use fixed alpha value for overlay
   graphics.drawRect(0, 0, screenWidth, screenHeight);
   graphics.endFill();
 }

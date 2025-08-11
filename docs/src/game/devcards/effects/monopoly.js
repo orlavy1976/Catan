@@ -1,16 +1,14 @@
-import { createMaterialChoice } from "../../../utils/materialDialog.js";
+import { createResourceDialog } from "../../../utils/dialog.js";
 import { patch } from "../../stateStore.js";
 
 export function playMonopoly({ app, hud, state, resPanel, refreshScores }) {
-  const resources = ["brick", "wood", "wheat", "sheep", "ore"];
-
-  const dialog = createMaterialChoice(app, {
+  const dialog = createResourceDialog(app, {
     title: "Monopoly",
-    message: "Choose a resource to monopolize. All other players will give you all their cards of this type:",
-    choices: resources.map(resource => ({
-      label: resource.charAt(0).toUpperCase() + resource.slice(1),
-      action: () => executeMonopoly(resource)
-    }))
+    subtitle: "Choose a resource to monopolize. All other players will give you all their cards of this type:",
+    resources: ["brick", "wood", "wheat", "sheep", "ore"],
+    onResourceSelect: (chosenResource) => {
+      executeMonopoly(chosenResource);
+    }
   });
 
   function executeMonopoly(chosenResource) {
