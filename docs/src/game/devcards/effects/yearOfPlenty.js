@@ -1,47 +1,48 @@
-import { makeBigButton, makeChip } from "../ui.js";
+import { createMaterialChoice } from "../../../utils/materialDialog.js";
+import { patch } from "../../stateStore.js";
 
-export function playYearOfPlenty({ app, hud, state, resPanel }) {
-  const RES = ["brick","wood","wheat","sheep","ore"];
-  const overlay = new PIXI.Container(); overlay.zIndex = 10000;
-  const dim = new PIXI.Graphics(); dim.beginFill(0x000000, 0.5).drawRect(0,0,app.renderer.width, app.renderer.height).endFill();
-  overlay.addChild(dim);
+export function playYearOfPlenty({ app, hud, state, resPanel, refreshScores }) {
+  const resources = ["brick", "wood", "wheat", "sheep", "ore"];
+  let selectedResources = [];
 
-  const panel = new PIXI.Container(); overlay.addChild(panel);
-  const bg = new PIXI.Graphics();
-  bg.beginFill(0x1f2937, 0.96).drawRoundedRect(0,0,480,260,16).endFill();
-  bg.lineStyle({ width:2, color:0xffffff, alpha:0.18 }).drawRoundedRect(0,0,480,260,16);
-  panel.addChild(bg);
+  function selectResource() {
+    if (selectedResources.length >= 2) {
+      completeYearOfPlenty();
+      return;
+    }
 
-  const title = new PIXI.Text("Year of Plenty — pick 2 resources", { fontFamily:"Georgia, serif", fontSize:20, fill:0xffffff });
-  title.x = 20; title.y = 14; panel.addChild(title);
-
-  let picks = [];
-  RES.forEach((k,i) => {
-    const c = makeChip(k, () => {
-      if (picks.length >= 2) return;
-      picks.push(k);
-      hud.showResult(`Picked: ${picks.join(", ")}`);
+    const dialog = createMaterialChoice(app, {
+      title: `Year of Plenty (${selectedResources.length + 1}/2)`,
+      message: selectedResources.length === 0 
+        ? "Choose your first resource from the bank:"
+        : `Selected: ${selectedResources[0]}. Choose your second resource:`,
+      choices: resources.map(resource => ({
+        label: resource.charAt(0).toUpperCase() + resource.slice(1),
+        action: () => {
+          selectedResources.push(resource);
+          selectResource(); // Recursively select next resource
+        }
+      }))
     });
-    c.container.x = 20 + i*90; c.container.y = 80;
-    panel.addChild(c.container);
-  });
 
-  const confirm = makeBigButton("Confirm", () => {
-    if (picks.length < 2) { hud.showResult("Pick two resources."); return; }
-    const me = state.players[state.currentPlayer - 1];
-    picks.forEach(k => { me.resources[k] = (me.resources[k]||0)+1; });
+    dialog.show();
+  }
+
+  function completeYearOfPlenty() {
+    // Give resources to player using patch for proper state management
+    patch(s => {
+      const player = s.players[s.currentPlayer - 1];
+      selectedResources.forEach(resource => {
+        player.resources[resource] = (player.resources[resource] || 0) + 1;
+      });
+    });
+
+    // Update UI
     resPanel?.updateResources?.(state.players);
-    close();
-    hud.showResult(`Year of Plenty: +1 ${picks[0]}, +1 ${picks[1]}`);
-  });
-  confirm.x = 340; confirm.y = 210; panel.addChild(confirm);
+    refreshScores?.();
+    hud.showResult(`Year of Plenty: received ${selectedResources.join(' and ')}`);
+  }
 
-  const cancel = makeBigButton("Cancel", () => close());
-  cancel.x = 220; cancel.y = 210; panel.addChild(cancel);
-
-  panel.x = (app.renderer.width - 480) / 2;
-  panel.y = (app.renderer.height - 260) / 2;
-
-  function close(){ app.stage.removeChild(overlay); }
-  app.stage.addChild(overlay);
+  // Start the selection process
+  selectResource();
 }

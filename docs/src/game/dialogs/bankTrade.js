@@ -16,9 +16,9 @@ import { RES_KEYS } from '../../config/constants.js';
 
 /**
  * Show bank trade dialog with resource-first selection UX
- * @param {object} deps - Dependencies (app, hud, state, resPanel, graph)
+ * @param {object} deps - Dependencies (app, hud, state, resPanel, graph, refreshHudAvailability)
  */
-export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
+export function showBankTradeDialog({ app, hud, state, resPanel, graph, refreshHudAvailability }) {
   const currentPlayer = state.players[state.currentPlayer - 1];
   const rates = computeEffectiveRatesForCurrentPlayer(state, graph);
   
@@ -30,14 +30,14 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
   });
 
   if (tradeableResources.length === 0) {
-    showNoTradesAvailableDialog({ app, hud, state, resPanel, graph });
+    showNoTradesAvailableDialog({ app, hud, state, resPanel, graph, refreshHudAvailability });
     return;
   }
 
   const dialog = createMaterialDialog(app, {
     title: "Bank Trade",
     type: MATERIAL_DIALOG_TYPES.LARGE,
-    onClose: () => enableHUD(hud)
+    onClose: () => refreshHudAvailability()
   });
 
   let currentY = 0;
@@ -59,7 +59,7 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
     (selectedResource) => {
       dialog.close();
       showResourceTradeOptions({
-        app, hud, state, resPanel, graph,
+        app, hud, state, resPanel, graph, refreshHudAvailability,
         selectedResource,
         rate: rates[selectedResource],
         available: currentPlayer.resources[selectedResource]
@@ -78,12 +78,12 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
   backButton.container.y = currentY;
   backButton.onClick(() => {
     dialog.close();
-    // Assuming there's a main trade menu function
-    if (typeof showTradeMenu === 'function') {
-      showTradeMenu({ app, hud, state, resPanel, graph });
-    } else {
-      enableHUD(hud);
-    }
+    // Import showTradeMenu to avoid circular import
+    import('./tradeMenu.js').then(({ showTradeMenu }) => {
+      showTradeMenu({ app, hud, state, resPanel, graph, refreshHudAvailability });
+    }).catch(() => {
+      refreshHudAvailability();
+    });
   });
   dialog.contentArea.addChild(backButton.container);
 
@@ -95,8 +95,11 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph }) {
  * Show trade options for a selected resource
  * @param {object} params - Parameters
  */
-function showResourceTradeOptions({ app, hud, state, resPanel, graph, selectedResource, rate, available }) {
+function showResourceTradeOptions({ app, hud, state, resPanel, graph, refreshHudAvailability, selectedResource, rate, available }) {
   const currentPlayer = state.players[state.currentPlayer - 1];
+  
+  // Track if trade was completed to avoid reopening dialog
+  let tradeCompleted = false;
   
   // Create list of possible trades
   const tradeOptions = RES_KEYS
@@ -111,8 +114,10 @@ function showResourceTradeOptions({ app, hud, state, resPanel, graph, selectedRe
     title: `Trade ${selectedResource}`,
     type: MATERIAL_DIALOG_TYPES.LARGE,
     onClose: () => {
-      // Go back to resource selection
-      showBankTradeDialog({ app, hud, state, resPanel, graph });
+      // Only go back to resource selection if trade wasn't completed
+      if (!tradeCompleted) {
+        showBankTradeDialog({ app, hud, state, resPanel, graph, refreshHudAvailability });
+      }
     }
   });
 
@@ -141,12 +146,13 @@ function showResourceTradeOptions({ app, hud, state, resPanel, graph, selectedRe
     button.container.y = row * (buttonHeight + gap);
     
     button.onClick(() => {
+      tradeCompleted = true; // Mark trade as completed to prevent dialog reopening
       executeBankTrade(currentPlayer, option.value);
       resPanel.updateResources(state.players);
       
       dialog.close();
       showTradeSuccessDialog(app, option.value, () => {
-        enableHUD(hud);
+        refreshHudAvailability();
       });
     });
     
@@ -164,7 +170,7 @@ function showResourceTradeOptions({ app, hud, state, resPanel, graph, selectedRe
   cancelButton.onClick(() => {
     dialog.close();
     // Go back to resource selection
-    showBankTradeDialog({ app, hud, state, resPanel, graph });
+    showBankTradeDialog({ app, hud, state, resPanel, graph, refreshHudAvailability });
   });
   dialog.contentArea.addChild(cancelButton.container);
 
@@ -318,11 +324,11 @@ function createResourceCard(resource, available, rate, canTrade, onClick) {
 /**
  * Show no trades available dialog
  */
-function showNoTradesAvailableDialog({ app, hud, state, resPanel, graph }) {
+function showNoTradesAvailableDialog({ app, hud, state, resPanel, graph, refreshHudAvailability }) {
   const dialog = createMaterialDialog(app, {
     title: "Bank Trade",
     type: MATERIAL_DIALOG_TYPES.SMALL,
-    onClose: () => enableHUD(hud)
+    onClose: () => refreshHudAvailability()
   });
 
   const messageText = createMaterialText(
@@ -339,9 +345,9 @@ function showNoTradesAvailableDialog({ app, hud, state, resPanel, graph }) {
   backButton.onClick(() => {
     dialog.close();
     if (typeof showTradeMenu === 'function') {
-      showTradeMenu({ app, hud, state, resPanel, graph });
+      showTradeMenu({ app, hud, state, resPanel, graph, refreshHudAvailability });
     } else {
-      enableHUD(hud);
+      refreshHudAvailability();
     }
   });
   dialog.contentArea.addChild(backButton.container);
@@ -394,21 +400,55 @@ function executeBankTrade(player, tradeData) {
 }
 
 /**
- * Compute effective trading rates for current player
+ * Compute effective trading rates for current player based on owned ports
  * @param {object} state - Game state
  * @param {object} graph - Board graph
  * @returns {object} Resource rates
  */
 function computeEffectiveRatesForCurrentPlayer(state, graph) {
-  // Simplified version - in real implementation this would check player's ports
-  // For now return default rates
-  return {
-    brick: 4,
-    wood: 4,
-    wheat: 4,
-    sheep: 4,
-    ore: 4
-  };
+  const me = state.players[state.currentPlayer - 1];
+  const myVertices = new Set([...(me.settlements || []), ...(me.cities || [])]);
+  const ports = state.ports || [];
+  const defaultRates = { brick:4, wood:4, wheat:4, sheep:4, ore:4 };
+  if (!graph || !graph.vertices || ports.length === 0 || myVertices.size === 0) return defaultRates;
+
+  const portVertices = ports.map(p => {
+    const vA = nearestVertexId(graph, p.edgePixels?.v1 || {x:0,y:0});
+    const vB = nearestVertexId(graph, p.edgePixels?.v2 || {x:0,y:0});
+    return new Set([vA, vB]);
+  });
+
+  let hasAnyPort = false;
+  const hasResPort = { brick:false, wood:false, wheat:false, sheep:false, ore:false };
+
+  ports.forEach((p, i) => {
+    const verts = portVertices[i];
+    for (const v of verts) {
+      if (myVertices.has(v)) {
+        if (p.type === "any") hasAnyPort = true;
+        else if (hasResPort[p.type] !== undefined) hasResPort[p.type] = true;
+        break;
+      }
+    }
+  });
+
+  const rates = { ...defaultRates };
+  for (const k of Object.keys(rates)) {
+    if (hasResPort[k]) rates[k] = 2;
+    else if (hasAnyPort) rates[k] = 3;
+  }
+  return rates;
+}
+
+function nearestVertexId(graph, pt) {
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < graph.vertices.length; i++) {
+    const v = graph.vertices[i];
+    const dx = v.x - pt.x, dy = v.y - pt.y;
+    const d = dx*dx + dy*dy;
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
 }
 
 /**
@@ -416,21 +456,12 @@ function computeEffectiveRatesForCurrentPlayer(state, graph) {
  * @param {object} hud - HUD instance
  */
 function disableHUD(hud) {
+  hud.setRollEnabled(false);
   hud.setEndEnabled(false);
   hud.setBuildRoadEnabled(false);
   hud.setBuildSettlementEnabled(false);
   hud.setBuildCityEnabled(false);
   hud.setTradeEnabled(false);
-}
-
-/**
- * Re-enable HUD buttons after dialog
- * @param {object} hud - HUD instance
- */
-function enableHUD(hud) {
-  hud.setEndEnabled(true);
-  hud.setBuildRoadEnabled(true);
-  hud.setBuildSettlementEnabled(true);
-  hud.setBuildCityEnabled(true);
-  hud.setTradeEnabled(true);
+  hud.setBuyDevEnabled(false);
+  hud.setPlayDevEnabled(false);
 }

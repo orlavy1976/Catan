@@ -753,17 +753,52 @@ function executeBankTrade(giveResource, giveAmount, getResource, getAmount, { ap
 }
 
 /**
- * Compute effective trading rates for current player
+ * Compute effective trading rates for current player based on owned ports
  */
 function computeEffectiveRatesForCurrentPlayer(state, graph) {
-  // Simplified - in real game this would check for harbors
-  return {
-    brick: 4,
-    wood: 4,
-    wheat: 4,
-    sheep: 4,
-    ore: 4
-  };
+  const me = state.players[state.currentPlayer - 1];
+  const myVertices = new Set([...(me.settlements || []), ...(me.cities || [])]);
+  const ports = state.ports || [];
+  const defaultRates = { brick:4, wood:4, wheat:4, sheep:4, ore:4 };
+  if (!graph || !graph.vertices || ports.length === 0 || myVertices.size === 0) return defaultRates;
+
+  const portVertices = ports.map(p => {
+    const vA = nearestVertexId(graph, p.edgePixels?.v1 || {x:0,y:0});
+    const vB = nearestVertexId(graph, p.edgePixels?.v2 || {x:0,y:0});
+    return new Set([vA, vB]);
+  });
+
+  let hasAnyPort = false;
+  const hasResPort = { brick:false, wood:false, wheat:false, sheep:false, ore:false };
+
+  ports.forEach((p, i) => {
+    const verts = portVertices[i];
+    for (const v of verts) {
+      if (myVertices.has(v)) {
+        if (p.type === "any") hasAnyPort = true;
+        else if (hasResPort[p.type] !== undefined) hasResPort[p.type] = true;
+        break;
+      }
+    }
+  });
+
+  const rates = { ...defaultRates };
+  for (const k of Object.keys(rates)) {
+    if (hasResPort[k]) rates[k] = 2;
+    else if (hasAnyPort) rates[k] = 3;
+  }
+  return rates;
+}
+
+function nearestVertexId(graph, pt) {
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < graph.vertices.length; i++) {
+    const v = graph.vertices[i];
+    const dx = v.x - pt.x, dy = v.y - pt.y;
+    const d = dx*dx + dy*dy;
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
 }
 
 /**

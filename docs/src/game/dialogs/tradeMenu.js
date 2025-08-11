@@ -7,9 +7,9 @@ import { showPlayerTradeDialog } from './playerTrade.js';
 
 /**
  * Show main trade menu with options for bank and player trading
- * @param {object} deps - Dependencies (app, hud, state, resPanel, graph)
+ * @param {object} deps - Dependencies (app, hud, state, resPanel, graph, refreshHudAvailability)
  */
-export function showTradeMenu({ app, hud, state, resPanel, graph }) {
+export function showTradeMenu({ app, hud, state, resPanel, graph, refreshHudAvailability }) {
   const dialog = createMaterialChoice(app, {
     title: "Trade",
     message: "Choose your trading partner",
@@ -20,13 +20,13 @@ export function showTradeMenu({ app, hud, state, resPanel, graph }) {
     onChoice: (choice) => {
       dialog.close();
       if (choice === "bank") {
-        showBankTradeDialog({ app, hud, state, resPanel, graph });
+        showBankTradeDialog({ app, hud, state, resPanel, graph, refreshHudAvailability });
       } else {
-        showPlayerTradeDialog({ app, hud, state, resPanel, graph });
+        showPlayerTradeDialog({ app, hud, state, resPanel, graph, refreshHudAvailability });
       }
     },
     onCancel: () => {
-      enableHUD(hud);
+      refreshHudAvailability();
     }
   });
 
@@ -39,21 +39,12 @@ export function showTradeMenu({ app, hud, state, resPanel, graph }) {
  * @param {object} hud - HUD instance
  */
 function disableHUD(hud) {
+  hud.setRollEnabled(false);
   hud.setEndEnabled(false);
   hud.setBuildRoadEnabled(false);
   hud.setBuildSettlementEnabled(false);
   hud.setBuildCityEnabled(false);
   hud.setTradeEnabled(false);
-}
-
-/**
- * Re-enable HUD buttons after dialog
- * @param {object} hud - HUD instance
- */
-function enableHUD(hud) {
-  hud.setEndEnabled(true);
-  hud.setBuildRoadEnabled(true);
-  hud.setBuildSettlementEnabled(true);
-  hud.setBuildCityEnabled(true);
-  hud.setTradeEnabled(true);
+  hud.setBuyDevEnabled(false);
+  hud.setPlayDevEnabled(false);
 }

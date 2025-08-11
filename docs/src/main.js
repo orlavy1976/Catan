@@ -116,7 +116,7 @@ const hud = createMaterialHUD(
   () => {
     try {
       console.log("🛍️ Trade");
-      showTradeMenu({ app, hud, state, resPanel, graph });
+      showTradeMenu({ app, hud, state, resPanel, graph, refreshHudAvailability });
     } catch (error) {
       console.error("Error in trade menu:", error);
     }

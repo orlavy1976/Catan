@@ -17,10 +17,20 @@ import { RES_KEYS } from '../../config/constants.js';
 
 /**
  * Show player trade dialog - select trading partner
- * @param {object} deps - Dependencies (app, hud, state, resPanel, graph)
+ * @param {object} deps - Dependencies (app, hud, state, resPanel, graph, refreshHudAvailability)
  */
-export function showPlayerTradeDialog({ app, hud, state, resPanel, graph }) {
+export function showPlayerTradeDialog({ app, hud, state, resPanel, graph, refreshHudAvailability }) {
   const currentPlayer = state.players[state.currentPlayer - 1];
+  
+  // Create a helper function that other nested functions can use
+  const restoreHUD = () => {
+    if (refreshHudAvailability) {
+      refreshHudAvailability();
+    }
+  };
+  
+  // Make it available globally for nested functions (temporary solution)
+  window._tempRestoreHUD = restoreHUD;
   const otherPlayers = state.players.filter(p => p.id !== currentPlayer.id);
   
   const choices = otherPlayers.map(player => ({
@@ -34,15 +44,19 @@ export function showPlayerTradeDialog({ app, hud, state, resPanel, graph }) {
     choices,
     onChoice: (targetPlayer) => {
       dialog.close();
-      showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, graph });
+      showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, graph, refreshHudAvailability });
     },
     onCancel: () => {
       // Go back to main trade menu
       if (typeof showTradeMenu === 'function') {
-        showTradeMenu({ app, hud, state, resPanel, graph });
+        showTradeMenu({ app, hud, state, resPanel, graph, refreshHudAvailability });
       } else {
-        enableHUD(hud);
+        restoreHUD();
       }
+    },
+    onClose: () => {
+      // Handle escape key or other close events
+      restoreHUD();
     }
   });
 
@@ -54,13 +68,13 @@ export function showPlayerTradeDialog({ app, hud, state, resPanel, graph }) {
  * Show trade negotiation interface
  * @param {object} params - Parameters
  */
-function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, graph }) {
+function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, graph, refreshHudAvailability }) {
   const currentPlayer = state.players[state.currentPlayer - 1];
   
   const dialog = createMaterialDialog(app, {
     title: `Trade with Player ${targetPlayer.id}`,
     type: MATERIAL_DIALOG_TYPES.LARGE,
-    onClose: () => enableHUD(hud)
+    onClose: () => refreshHudAvailability()
   });
 
   // Trade state
@@ -194,7 +208,7 @@ function showTradeResponseDialog({ app, hud, state, resPanel, currentPlayer, tar
   const dialog = createMaterialDialog(app, {
     title: `Player ${targetPlayer.id} Response`,
     type: MATERIAL_DIALOG_TYPES.MEDIUM,
-    onClose: () => enableHUD(hud)
+    onClose: () => window._tempRestoreHUD?.()
   });
 
   let currentY = 0;
@@ -268,7 +282,7 @@ function showTradeAcceptedDialog({ app, hud, state, resPanel, currentPlayer, tar
   const dialog = createMaterialDialog(app, {
     title: "Trade Accepted! 🎉",
     type: MATERIAL_DIALOG_TYPES.MEDIUM,
-    onClose: () => enableHUD(hud)
+    onClose: () => window._tempRestoreHUD?.()
   });
 
   let currentY = 0;
@@ -312,7 +326,7 @@ function showTradeAcceptedDialog({ app, hud, state, resPanel, currentPlayer, tar
     // Close dialog and re-enable HUD
     dialog.close();
     setTimeout(() => {
-      enableHUD(hud);
+      window._tempRestoreHUD?.();
     }, 100);
   });
 
@@ -329,7 +343,7 @@ function showTradeRejectedDialog({ app, hud, state, resPanel, currentPlayer, tar
   const dialog = createMaterialDialog(app, {
     title: "Trade Rejected 😞",
     type: MATERIAL_DIALOG_TYPES.MEDIUM,
-    onClose: () => enableHUD(hud)
+    onClose: () => window._tempRestoreHUD?.()
   });
 
   let currentY = 0;
@@ -358,14 +372,14 @@ function showTradeRejectedDialog({ app, hud, state, resPanel, currentPlayer, tar
   tryAgainButton.onClick(() => {
     dialog.close();
     setTimeout(() => {
-      showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, graph });
+      showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, graph, refreshHudAvailability: window._tempRestoreHUD });
     }, 100);
   });
 
   cancelButton.onClick(() => {
     dialog.close();
     setTimeout(() => {
-      enableHUD(hud);
+      window._tempRestoreHUD?.();
     }, 100);
   });
 
@@ -577,21 +591,28 @@ function validateTradeOffer(giver, receiver, tradeOffer) {
  * @param {object} hud - HUD instance
  */
 function disableHUD(hud) {
+  hud.setRollEnabled(false);
   hud.setEndEnabled(false);
   hud.setBuildRoadEnabled(false);
   hud.setBuildSettlementEnabled(false);
   hud.setBuildCityEnabled(false);
   hud.setTradeEnabled(false);
+  hud.setBuyDevEnabled(false);
+  hud.setPlayDevEnabled(false);
 }
 
 /**
- * Re-enable HUD buttons after dialog
- * @param {object} hud - HUD instance
+ * Temporary enableHUD that calls refreshHudAvailability if available
+ * TODO: Remove this and pass refreshHudAvailability properly through call stack
  */
 function enableHUD(hud) {
+  // For now, just enable the basic buttons since we need to refactor this properly
+  hud.setRollEnabled(true);
   hud.setEndEnabled(true);
-  hud.setBuildRoadEnabled(true);
-  hud.setBuildSettlementEnabled(true);
-  hud.setBuildCityEnabled(true);
+  hud.setBuildRoadEnabled(false);
+  hud.setBuildSettlementEnabled(false);
+  hud.setBuildCityEnabled(false);
   hud.setTradeEnabled(true);
+  hud.setBuyDevEnabled(false);
+  hud.setPlayDevEnabled(false);
 }

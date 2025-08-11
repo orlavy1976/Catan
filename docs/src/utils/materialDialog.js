@@ -54,6 +54,7 @@ export function createMaterialDialog(app, options = {}) {
     closeOnOverlay = true,
     animation = 'scale', // 'fade', 'scale', 'slide'
     elevation = 3,
+    onClose = null,
   } = options;
 
   // Calculate dimensions
@@ -123,7 +124,7 @@ export function createMaterialDialog(app, options = {}) {
 
   // State
   let isVisible = false;
-  let closeCallback = null;
+  let closeCallback = onClose; // Set initial close callback from options
   const buttons = [];
 
   // Event handlers

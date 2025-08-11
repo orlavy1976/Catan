@@ -1,53 +1,48 @@
-import { makeBigButton, makeChip } from "../ui.js";
+import { createMaterialChoice } from "../../../utils/materialDialog.js";
+import { patch } from "../../stateStore.js";
 
-export function playMonopoly({ app, hud, state, resPanel }) {
-  const RES = ["brick","wood","wheat","sheep","ore"];
-  const overlay = new PIXI.Container(); overlay.zIndex = 10000;
-  const dim = new PIXI.Graphics(); dim.beginFill(0x000000, 0.5).drawRect(0,0,app.renderer.width, app.renderer.height).endFill();
-  overlay.addChild(dim);
+export function playMonopoly({ app, hud, state, resPanel, refreshScores }) {
+  const resources = ["brick", "wood", "wheat", "sheep", "ore"];
 
-  const panel = new PIXI.Container(); overlay.addChild(panel);
-  const bg = new PIXI.Graphics();
-  bg.beginFill(0x1f2937, 0.96).drawRoundedRect(0,0,480,220,16).endFill();
-  bg.lineStyle({ width:2, color:0xffffff, alpha:0.18 }).drawRoundedRect(0,0,480,220,16);
-  panel.addChild(bg);
-
-  const title = new PIXI.Text("Monopoly — choose a resource", { fontFamily:"Georgia, serif", fontSize:20, fill:0xffffff });
-  title.x = 20; title.y = 14; panel.addChild(title);
-
-  let chosen = null;
-  RES.forEach((k,i) => {
-    const c = makeChip(k, () => { chosen = k; hud.showResult(`Monopoly: ${k}`); });
-    c.container.x = 20 + i*90; c.container.y = 80;
-    panel.addChild(c.container);
+  const dialog = createMaterialChoice(app, {
+    title: "Monopoly",
+    message: "Choose a resource to monopolize. All other players will give you all their cards of this type:",
+    choices: resources.map(resource => ({
+      label: resource.charAt(0).toUpperCase() + resource.slice(1),
+      action: () => executeMonopoly(resource)
+    }))
   });
 
-  const confirm = makeBigButton("Confirm", () => {
-    if (!chosen) { hud.showResult("Pick a resource."); return; }
+  function executeMonopoly(chosenResource) {
     const meIdx = state.currentPlayer - 1;
-    const me = state.players[meIdx];
-    let taken = 0;
-    state.players.forEach((p,i) => {
-      if (i === meIdx) return;
-      const amt = p.resources[chosen] || 0;
-      if (amt > 0) {
-        p.resources[chosen] -= amt;
-        me.resources[chosen] = (me.resources[chosen]||0) + amt;
-        taken += amt;
-      }
+    let totalTaken = 0;
+
+    // Take all cards of chosen type from other players using patch
+    patch(s => {
+      const me = s.players[meIdx];
+      
+      s.players.forEach((player, index) => {
+        if (index === meIdx) return; // Skip current player
+        
+        const amount = player.resources[chosenResource] || 0;
+        if (amount > 0) {
+          player.resources[chosenResource] = 0;
+          me.resources[chosenResource] = (me.resources[chosenResource] || 0) + amount;
+          totalTaken += amount;
+        }
+      });
     });
+
+    // Update UI
     resPanel?.updateResources?.(state.players);
-    close();
-    hud.showResult(`Monopoly: took ${taken} ${chosen} from others`);
-  });
-  confirm.x = 340; confirm.y = 170; panel.addChild(confirm);
+    refreshScores?.();
+    
+    // Show result
+    const message = totalTaken > 0 
+      ? `Monopoly: took ${totalTaken} ${chosenResource} from other players`
+      : `Monopoly: no other players had ${chosenResource}`;
+    hud.showResult(message);
+  }
 
-  const cancel = makeBigButton("Cancel", () => close());
-  cancel.x = 220; cancel.y = 170; panel.addChild(cancel);
-
-  panel.x = (app.renderer.width - 480) / 2;
-  panel.y = (app.renderer.height - 220) / 2;
-
-  function close(){ app.stage.removeChild(overlay); }
-  app.stage.addChild(overlay);
+  dialog.show();
 }
