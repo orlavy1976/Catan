@@ -3,15 +3,11 @@
 // Comprehensive dialog utilities for consistent, animated dialogs
 
 import { 
-  COLORS, 
-  TYPOGRAPHY, 
-  DIMENSIONS, 
   SPACING,
   EFFECTS, 
   UI_STYLES,
   Z_INDEX
 } from "../config/materialDesign.js";
-// ALPHA not available in materialDesign - using inline values
 const ALPHA = { panelBackground: 0.95, modalBackground: 0.98 };
 import { makeButton } from "../catan/ui/materialButton.js";
 import { fadeOut as materialFadeOut, drawMaterialCard, createMaterialText } from './materialUI.js';
@@ -203,129 +199,6 @@ export function createDialog(app, options = {}) {
   };
 }
 
-// ==================== SPECIALIZED DIALOG CREATORS ====================
-
-/**
- * Create a confirmation dialog with Yes/No buttons
- * @param {PIXI.Application} app - PixiJS application
- * @param {object} options - Dialog options
- * @returns {object} Dialog instance
- */
-export function createConfirmDialog(app, options = {}) {
-  const config = {
-    title: 'Confirm Action',
-    message: 'Are you sure?',
-    yesText: 'Yes',
-    noText: 'No',
-    onYes: null,
-    onNo: null,
-    type: DIALOG_TYPES.SMALL,
-    ...options
-  };
-
-  const dialog = createDialog(app, {
-    ...config,
-    subtitle: config.message,
-    closeOnOverlay: false,
-    showCloseButton: false
-  });
-
-  // Create buttons
-  const buttonContainer = new PIXI.Container();
-  const yesButton = makeButton(config.yesText, 120, 'primary');
-  const noButton = makeButton(config.noText, 120, 'secondary');
-
-  // Position buttons
-  arrangeHorizontally([
-    { container: noButton.container },
-    { container: yesButton.container }
-  ], 0, SPACING.md);
-
-  // Center button container
-  buttonContainer.x = (dialog.contentWidth - (240 + SPACING.md)) / 2;
-  buttonContainer.y = dialog.contentStartY + SPACING.lg;
-
-  buttonContainer.addChild(noButton.container);
-  buttonContainer.addChild(yesButton.container);
-  dialog.content.addChild(buttonContainer);
-
-  // Wire button events
-  yesButton.onClick(() => {
-    config.onYes?.();
-    dialog.close();
-  });
-
-  noButton.onClick(() => {
-    config.onNo?.();
-    dialog.close();
-  });
-
-  return dialog;
-}
-
-/**
- * Create a choice dialog with multiple options
- * @param {PIXI.Application} app - PixiJS application
- * @param {object} options - Dialog options
- * @returns {object} Dialog instance
- */
-export function createChoiceDialog(app, options = {}) {
-  const config = {
-    title: 'Choose Option',
-    choices: [],
-    onChoice: null,
-    showCancel: true,
-    cancelText: 'Cancel',
-    onCancel: null,
-    ...options
-  };
-
-  const dialog = createDialog(app, {
-    ...config,
-    type: DIALOG_TYPES.MEDIUM,
-    closeOnOverlay: config.showCancel,
-    showCloseButton: config.showCancel
-  });
-
-  let currentY = dialog.contentStartY;
-
-  // Create choice buttons
-  config.choices.forEach((choice, index) => {
-    const button = makeButton(
-      choice.label || choice, 
-      dialog.contentWidth - 40, 
-      'primary'
-    );
-    
-    button.container.x = 20;
-    button.container.y = currentY;
-    
-    button.onClick(() => {
-      config.onChoice?.(choice.value || choice, index);
-      dialog.close();
-    });
-
-    dialog.content.addChild(button.container);
-    currentY += button.container.height + SPACING.md;
-  });
-
-  // Cancel button if needed
-  if (config.showCancel) {
-    const cancelButton = makeButton(config.cancelText, 120, 'secondary');
-    cancelButton.container.x = (dialog.contentWidth - 120) / 2;
-    cancelButton.container.y = currentY + SPACING.lg;
-    
-    cancelButton.onClick(() => {
-      config.onCancel?.();
-      dialog.close();
-    });
-
-    dialog.content.addChild(cancelButton.container);
-  }
-
-  return dialog;
-}
-
 /**
  * Create a resource selection dialog
  * @param {PIXI.Application} app - PixiJS application
@@ -388,8 +261,6 @@ export function createResourceDialog(app, options = {}) {
   return dialog;
 }
 
-// ==================== RESOURCE CHIP HELPER ====================
-
 /**
  * Create a resource selection chip
  * @param {string} resource - Resource type
@@ -438,64 +309,4 @@ function createResourceChip(resource, onClick) {
   container.on("pointertap", onClick);
   
   return container;
-}
-
-// ==================== MATERIAL DESIGN INTEGRATION ====================
-// Enhanced dialog functions that use Material Design when available
-
-/**
- * Enhanced choice dialog that prefers Material Design
- * @param {PIXI.Application} app - PixiJS application
- * @param {object} options - Dialog options
- * @returns {object} Dialog instance
- */
-export function createEnhancedChoiceDialog(app, options = {}) {
-  // Try to use Material Design if available
-  try {
-    const { createMaterialChoice } = require('./materialDialog.js');
-    
-    console.warn('⚠️ DEPRECATION: Using legacy createChoiceDialog. Consider migrating to createMaterialChoice for better UX.');
-    
-    const config = {
-      title: options.title || 'Choose',
-      message: options.subtitle || '',
-      choices: options.choices || [],
-      onChoice: options.onChoice,
-      onCancel: options.onCancel,
-      ...options
-    };
-
-    return createMaterialChoice(app, config);
-  } catch (error) {
-    // Fallback to legacy implementation
-    return createChoiceDialog(app, options);
-  }
-}
-
-/**
- * Enhanced confirm dialog that prefers Material Design
- * @param {PIXI.Application} app - PixiJS application
- * @param {object} options - Dialog options
- * @returns {object} Dialog instance
- */
-export function createEnhancedConfirmDialog(app, options = {}) {
-  try {
-    const { createMaterialConfirm } = require('./materialDialog.js');
-    
-    console.warn('⚠️ DEPRECATION: Using legacy createConfirmDialog. Consider migrating to createMaterialConfirm for better UX.');
-    
-    const config = {
-      title: options.title || 'Confirm',
-      message: options.message || '',
-      confirmText: options.yesText || 'Yes',
-      cancelText: options.noText || 'No',
-      onConfirm: options.onConfirm,
-      onCancel: options.onCancel,
-      ...options
-    };
-
-    return createMaterialConfirm(app, config);
-  } catch (error) {
-    return createConfirmDialog(app, options);
-  }
 }
