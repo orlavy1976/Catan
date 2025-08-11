@@ -1,4 +1,4 @@
-import { createResourceDialog } from "../../../utils/dialog.js";
+import { createResourceDialog } from "../../../utils/resourceDialog.js";
 import { patch } from "../../stateStore.js";
 
 export function playMonopoly({ app, hud, state, resPanel, refreshScores }) {

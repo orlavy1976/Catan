@@ -9,7 +9,6 @@ import {
 import { PLAYER_COLORS } from "../config/constants.js";
 import { 
   createMaterialText,
-  drawMaterialCard
 } from "../utils/materialUI.js";
 
 export function createScorePanel(app, state) {

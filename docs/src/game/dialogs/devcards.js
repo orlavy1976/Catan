@@ -3,9 +3,8 @@
 // Modern, design-system-based development card dialogs
 
 import { 
-  createResourceDialog,
-  DIALOG_ANIMATION 
-} from "../../utils/dialog.js";
+  createResourceDialog
+} from "../../utils/resourceDialog.js";
 import { patch } from "../stateStore.js";
 
 /**
@@ -26,15 +25,11 @@ export function showYearOfPlentyDialog(deps) {
       title: "Year of Plenty (1/2)",
       subtitle: "Choose your first resource from the bank",
       resources: ['brick', 'wood', 'wheat', 'sheep', 'ore'],
-      animation: DIALOG_ANIMATION.SCALE,
+      animation: 'scale',
       onResourceSelect: (resource) => {
         console.log("🎴 showYearOfPlentyDialog: First resource selected:", resource);
         selectedResources = [resource];
         selectSecondResource();
-      },
-      onCancel: () => {
-        console.log("🎴 showYearOfPlentyDialog: First dialog cancelled");
-        enableHUD(hud);
       }
     });
 
@@ -48,16 +43,12 @@ export function showYearOfPlentyDialog(deps) {
       title: "Year of Plenty (2/2)",
       subtitle: `First: ${selectedResources[0]}. Choose your second resource`,
       resources: ['brick', 'wood', 'wheat', 'sheep', 'ore'],
-      animation: DIALOG_ANIMATION.SCALE,
+      animation: 'scale',
       onResourceSelect: (resource) => {
         console.log("🎴 showYearOfPlentyDialog: Second resource selected:", resource);
         selectedResources.push(resource);
         executeYearOfPlenty(selectedResources, state, resPanel, hud, refreshScores);
         enableHUD(hud);
-      },
-      onCancel: () => {
-        console.log("🎴 showYearOfPlentyDialog: Second dialog cancelled, going back");
-        selectFirstResource();
       }
     });
 
