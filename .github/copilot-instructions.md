@@ -49,7 +49,7 @@ docs/src/
 ```
 
 ### Material Design System
-The project now uses a unified **Material Design system** for all UI components:
+The project uses a unified **Material Design system** for all UI components:
 
 - **`utils/materialUI.js`**: Core animation library with easing functions, fade/scale/slide animations
 - **`utils/materialDialog.js`**: Material Design dialog components (alert, confirm, choice, form)
@@ -141,21 +141,6 @@ animateScale(container, 1.2, MATERIAL_MOTION.duration.normal);
 - **Migrate inline dialogs** to Material Design system when modifying existing code
 - **Use appropriate dialog types**: Alert, Confirm, Choice, Form, or custom dialogs
 - **Handle HUD state properly** with disable/enable functions
-
-```javascript
-// Preferred dialog pattern
-import { createMaterialChoice } from "../utils/materialDialog.js";
-
-function showOptionsMenu(app, options) {
-  createMaterialChoice(app, {
-    title: "Choose Option",
-    choices: options.map(opt => ({
-      label: opt.name,
-      action: opt.callback
-    }))
-  });
-}
-```
 
 ### State and Data Flow
 - **Immutable-style updates** where possible

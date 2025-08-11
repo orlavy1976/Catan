@@ -6,10 +6,13 @@ import {
   createMaterialChoice,
   MATERIAL_DIALOG_TYPES 
 } from '../../utils/materialDialog.js';
-import { makeButton } from '../../catan/ui/materialButton.js';
+import { createMaterialButton } from '../../catan/ui/materialButton.js';
 import { 
   createMaterialText, 
-  createMaterialHeadline 
+  createMaterialHeadline,
+  createMaterialContainer,
+  drawMaterialCard,
+  animateScale
 } from '../../utils/materialUI.js';
 import { MATERIAL_COLORS, MATERIAL_SPACING } from '../../config/materialDesign.js';
 import { RES_KEYS } from '../../config/constants.js';
@@ -119,32 +122,46 @@ function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, g
   function updateTradeSummary() {
     summaryContainer.removeChildren();
     
+    // Create summary card background
+    const summaryBg = new PIXI.Graphics();
+    drawMaterialCard(summaryBg, 360, 60, {
+      elevation: 1,
+      backgroundColor: MATERIAL_COLORS.surface.tertiary,
+      borderRadius: 8
+    });
+    summaryContainer.addChild(summaryBg);
+    
     const giveTotal = Object.values(tradeOffer.give).reduce((sum, count) => sum + count, 0);
     const receiveTotal = Object.values(tradeOffer.receive).reduce((sum, count) => sum + count, 0);
     
+    let summaryText;
+    let textColor = MATERIAL_COLORS.neutral[300];
+    
     if (giveTotal === 0 && receiveTotal === 0) {
-      const emptyText = createMaterialText("Select resources to trade", 'bodyMedium');
-      emptyText.style.fill = MATERIAL_COLORS.neutral[400];
-      summaryContainer.addChild(emptyText);
-      return;
+      summaryText = "💡 Select resources to trade";
+      textColor = MATERIAL_COLORS.neutral[400];
+    } else {
+      summaryText = "📋 Trade Summary: ";
+      if (giveTotal > 0) {
+        const giveItems = RES_KEYS.filter(res => tradeOffer.give[res] > 0)
+          .map(res => `${tradeOffer.give[res]} ${res}`);
+        summaryText += `Give ${giveItems.join(", ")}`;
+      }
+      
+      if (receiveTotal > 0) {
+        const receiveItems = RES_KEYS.filter(res => tradeOffer.receive[res] > 0)
+          .map(res => `${tradeOffer.receive[res]} ${res}`);
+        if (giveTotal > 0) summaryText += " → ";
+        summaryText += `Get ${receiveItems.join(", ")}`;
+      }
+      textColor = MATERIAL_COLORS.neutral[100];
     }
 
-    let summaryText = "Trade Summary: ";
-    if (giveTotal > 0) {
-      const giveItems = RES_KEYS.filter(res => tradeOffer.give[res] > 0)
-        .map(res => `${tradeOffer.give[res]} ${res}`);
-      summaryText += `Give ${giveItems.join(", ")}`;
-    }
-    
-    if (receiveTotal > 0) {
-      const receiveItems = RES_KEYS.filter(res => tradeOffer.receive[res] > 0)
-        .map(res => `${tradeOffer.receive[res]} ${res}`);
-      if (giveTotal > 0) summaryText += " → ";
-      summaryText += `Get ${receiveItems.join(", ")}`;
-    }
-    
-    const summary = createMaterialText(summaryText, 'bodyMedium');
-    summaryContainer.addChild(summary);
+    const summaryTextObj = createMaterialText(summaryText, 'bodyMedium');
+    summaryTextObj.x = MATERIAL_SPACING[3];
+    summaryTextObj.y = 20;
+    summaryTextObj.style.fill = textColor;
+    summaryContainer.addChild(summaryTextObj);
   }
 
   currentY += 40;
@@ -155,8 +172,16 @@ function showTradeNegotiationDialog({ app, hud, state, resPanel, targetPlayer, g
   buttonContainer.y = currentY;
   dialog.contentArea.addChild(buttonContainer);
 
-  const proposeButton = makeButton("Propose Trade", 140, 'primary');
-  const cancelButton = makeButton("Cancel", 100, 'secondary');
+  const proposeButton = createMaterialButton("Propose Trade", {
+    variant: 'filled',
+    size: 'medium',
+    width: 140
+  });
+  const cancelButton = createMaterialButton("Cancel", {
+    variant: 'text',
+    size: 'medium',
+    width: 100
+  });
 
   proposeButton.onClick(() => {
     const giveTotal = Object.values(tradeOffer.give).reduce((sum, count) => sum + count, 0);
@@ -313,7 +338,11 @@ function showTradeAcceptedDialog({ app, hud, state, resPanel, currentPlayer, tar
   currentY += 80;
 
   // Continue button
-  const continueButton = makeButton("Continue", 120, 'primary');
+  const continueButton = createMaterialButton("Continue", {
+    variant: 'filled',
+    size: 'medium',
+    width: 120
+  });
   continueButton.container.x = (400 - 120) / 2;
   continueButton.container.y = currentY;
   
@@ -365,8 +394,16 @@ function showTradeRejectedDialog({ app, hud, state, resPanel, currentPlayer, tar
   buttonContainer.y = currentY;
   dialog.contentArea.addChild(buttonContainer);
 
-  const tryAgainButton = makeButton("Try Different Trade", 180, 'primary');
-  const cancelButton = makeButton("Cancel", 100, 'secondary');
+  const tryAgainButton = createMaterialButton("Try Different Trade", {
+    variant: 'filled',
+    size: 'medium',
+    width: 180
+  });
+  const cancelButton = createMaterialButton("Cancel", {
+    variant: 'text',
+    size: 'medium',
+    width: 100
+  });
 
   tryAgainButton.onClick(() => {
     dialog.close();
@@ -428,17 +465,27 @@ function createResourceSelector(playerResources, selection, mode) {
   RES_KEYS.forEach(resourceType => {
     const resourceContainer = new PIXI.Container();
     
+    // Resource card background using Material Design
+    const cardBg = new PIXI.Graphics();
+    drawMaterialCard(cardBg, 55, 80, {
+      elevation: 1,
+      backgroundColor: MATERIAL_COLORS.surface.secondary,
+      borderRadius: 8
+    });
+    resourceContainer.addChild(cardBg);
+    
     // Resource icon background
     const iconBg = new PIXI.Graphics();
-    iconBg.beginFill(MATERIAL_COLORS.resource?.[resourceType] || MATERIAL_COLORS.primary[500]);
-    iconBg.drawRoundedRect(0, 0, 40, 40, 4);
+    const resourceColor = MATERIAL_COLORS.resource?.[resourceType] || MATERIAL_COLORS.primary[500];
+    iconBg.beginFill(resourceColor);
+    iconBg.drawRoundedRect(7.5, 5, 40, 25, 4);
     iconBg.endFill();
     resourceContainer.addChild(iconBg);
 
     // Resource type label
     const typeLabel = createMaterialText(resourceType.charAt(0).toUpperCase(), 'bodyMedium');
-    typeLabel.x = 20;
-    typeLabel.y = 20;
+    typeLabel.x = 27.5;
+    typeLabel.y = 17.5;
     typeLabel.anchor.set(0.5);
     typeLabel.style.fill = 0xffffff;
     resourceContainer.addChild(typeLabel);
@@ -446,15 +493,16 @@ function createResourceSelector(playerResources, selection, mode) {
     // Available count (only for 'give' mode)
     if (mode === 'give') {
       const availableText = createMaterialText(`(${playerResources[resourceType]})`, 'bodySmall');
-      availableText.x = 20;
-      availableText.y = 45;
+      availableText.x = 27.5;
+      availableText.y = 32;
       availableText.anchor.set(0.5, 0);
+      availableText.style.fill = MATERIAL_COLORS.neutral[400];
       resourceContainer.addChild(availableText);
     }
 
     // Selection controls
     const controlsContainer = new PIXI.Container();
-    controlsContainer.y = mode === 'give' ? 60 : 45;
+    controlsContainer.y = mode === 'give' ? 45 : 35;
     resourceContainer.addChild(controlsContainer);
 
     // Minus button
@@ -465,13 +513,15 @@ function createResourceSelector(playerResources, selection, mode) {
         if (container.onUpdate) container.onUpdate();
       }
     });
+    minusBtn.x = 5;
     controlsContainer.addChild(minusBtn);
 
     // Count display
     const countText = createMaterialText("0", 'bodyMedium');
-    countText.x = 20;
+    countText.x = 27.5;
     countText.y = 7;
     countText.anchor.set(0.5, 0);
+    countText.style.fill = MATERIAL_COLORS.primary[500];
     controlsContainer.addChild(countText);
 
     // Plus button
@@ -483,7 +533,7 @@ function createResourceSelector(playerResources, selection, mode) {
         if (container.onUpdate) container.onUpdate();
       }
     });
-    plusBtn.x = 30;
+    plusBtn.x = 40;
     controlsContainer.addChild(plusBtn);
 
     function updateSelectionDisplay() {
@@ -499,14 +549,14 @@ function createResourceSelector(playerResources, selection, mode) {
 
     resourceContainer.x = currentX;
     container.addChild(resourceContainer);
-    currentX += 60;
+    currentX += 65; // Increased spacing for larger cards
   });
 
   return container;
 }
 
 /**
- * Create a small button for resource selection
+ * Create a small button for resource selection with Material Design styling
  * @param {string} label - Button label
  * @param {function} onClick - Click handler
  * @returns {PIXI.Container} Button container
@@ -514,10 +564,13 @@ function createResourceSelector(playerResources, selection, mode) {
 function createSmallButton(label, onClick) {
   const container = new PIXI.Container();
   
+  // Background using Material Design card
   const bg = new PIXI.Graphics();
-  bg.beginFill(MATERIAL_COLORS.primary[500]);
-  bg.drawRoundedRect(0, 0, 15, 15, 2);
-  bg.endFill();
+  drawMaterialCard(bg, 15, 15, {
+    elevation: 1,
+    backgroundColor: MATERIAL_COLORS.primary[500],
+    borderRadius: 4
+  });
   container.addChild(bg);
 
   const text = createMaterialText(label, 'bodySmall');
@@ -525,23 +578,30 @@ function createSmallButton(label, onClick) {
   text.y = 7.5;
   text.anchor.set(0.5);
   text.style.fill = 0xffffff;
+  text.style.fontSize = 10; // Smaller for the tiny button
   container.addChild(text);
 
   container.eventMode = "static";
   container.cursor = "pointer";
   
   container.on("pointerover", () => {
+    animateScale(container, 1.1, 100);
     bg.clear();
-    bg.beginFill(MATERIAL_COLORS.primary[400]);
-    bg.drawRoundedRect(0, 0, 15, 15, 2);
-    bg.endFill();
+    drawMaterialCard(bg, 15, 15, {
+      elevation: 2,
+      backgroundColor: MATERIAL_COLORS.primary[400],
+      borderRadius: 4
+    });
   });
 
   container.on("pointerout", () => {
+    animateScale(container, 1, 100);
     bg.clear();
-    bg.beginFill(MATERIAL_COLORS.primary[500]);
-    bg.drawRoundedRect(0, 0, 15, 15, 2);
-    bg.endFill();
+    drawMaterialCard(bg, 15, 15, {
+      elevation: 1,
+      backgroundColor: MATERIAL_COLORS.primary[500],
+      borderRadius: 4
+    });
   });
 
   container.on("pointertap", onClick);

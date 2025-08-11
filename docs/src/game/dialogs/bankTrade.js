@@ -3,13 +3,13 @@
 
 import { 
   createMaterialDialog, 
-  createMaterialChoice,
   MATERIAL_DIALOG_TYPES 
 } from '../../utils/materialDialog.js';
-import { createMaterialButton, makeButton } from '../../catan/ui/materialButton.js';
+import { createMaterialButton } from '../../catan/ui/materialButton.js';
 import { 
   createMaterialText, 
-  createMaterialHeadline 
+  drawMaterialCard,
+  animateScale
 } from '../../utils/materialUI.js';
 import { MATERIAL_COLORS, MATERIAL_SPACING } from '../../config/materialDesign.js';
 import { RES_KEYS } from '../../config/constants.js';
@@ -73,7 +73,11 @@ export function showBankTradeDialog({ app, hud, state, resPanel, graph, refreshH
   currentY += resourceGrid.height + MATERIAL_SPACING[4];
 
   // Back button
-  const backButton = makeButton("Back to Trade Menu", 180, 'secondary');
+  const backButton = createMaterialButton("Back to Trade Menu", {
+    variant: 'text',
+    size: 'medium',
+    width: 180
+  });
   backButton.container.x = (400 - 180) / 2; // Use fixed width for now
   backButton.container.y = currentY;
   backButton.onClick(() => {
@@ -141,7 +145,11 @@ function showResourceTradeOptions({ app, hud, state, resPanel, graph, refreshHud
     const row = Math.floor(index / columns);
     const col = index % columns;
     
-    const button = makeButton(option.label, buttonWidth, 'outlined');
+    const button = createMaterialButton(option.label, {
+      variant: 'outlined',
+      size: 'medium',
+      width: buttonWidth
+    });
     button.container.x = col * (buttonWidth + gap);
     button.container.y = row * (buttonHeight + gap);
     
@@ -164,7 +172,11 @@ function showResourceTradeOptions({ app, hud, state, resPanel, graph, refreshHud
   dialog.contentArea.addChild(buttonContainer);
 
   // Cancel button
-  const cancelButton = makeButton("Cancel", 120, 'text');
+  const cancelButton = createMaterialButton("Cancel", {
+    variant: 'text',
+    size: 'medium',
+    width: 120
+  });
   cancelButton.container.x = (700 - 120) / 2; // Center in LARGE dialog
   cancelButton.container.y = 50 + (Math.ceil(tradeOptions.length / columns) * (buttonHeight + gap)) + MATERIAL_SPACING[4];
   cancelButton.onClick(() => {
@@ -238,20 +250,22 @@ function createResourceSelectionGrid(resources, rates, onSelect) {
 function createResourceCard(resource, available, rate, canTrade, onClick) {
   const container = new PIXI.Container();
   
-  // Background
+  // Background using Material Design card
   const bg = new PIXI.Graphics();
-  const alpha = canTrade ? 1 : 0.4;
-  const borderColor = canTrade ? MATERIAL_COLORS.primary[500] : MATERIAL_COLORS.neutral[600];
+  const elevation = canTrade ? 2 : 1;
+  const backgroundColor = canTrade ? MATERIAL_COLORS.surface.secondary : MATERIAL_COLORS.surface.primary;
   
-  bg.lineStyle(2, borderColor, alpha);
-  bg.beginFill(MATERIAL_COLORS.surface.secondary, alpha);
-  bg.drawRoundedRect(0, 0, 80, 100, 8);
-  bg.endFill();
+  drawMaterialCard(bg, 80, 100, {
+    elevation,
+    backgroundColor,
+    borderRadius: 12
+  });
   container.addChild(bg);
 
-  // Resource icon
+  // Resource icon with Material Design styling
   const iconBg = new PIXI.Graphics();
-  iconBg.beginFill(MATERIAL_COLORS.resource?.[resource] || MATERIAL_COLORS.primary[500], alpha);
+  const resourceColor = MATERIAL_COLORS.resource?.[resource] || MATERIAL_COLORS.primary[500];
+  iconBg.beginFill(resourceColor, canTrade ? 1 : 0.5);
   iconBg.drawRoundedRect(15, 10, 50, 30, 6);
   iconBg.endFill();
   container.addChild(iconBg);
@@ -262,7 +276,7 @@ function createResourceCard(resource, available, rate, canTrade, onClick) {
   resourceLetter.y = 25;
   resourceLetter.anchor.set(0.5);
   resourceLetter.style.fill = 0xffffff;
-  resourceLetter.alpha = alpha;
+  resourceLetter.alpha = canTrade ? 1 : 0.5;
   container.addChild(resourceLetter);
 
   // Available amount
@@ -270,7 +284,7 @@ function createResourceCard(resource, available, rate, canTrade, onClick) {
   availableText.x = 40;
   availableText.y = 50;
   availableText.anchor.set(0.5, 0);
-  availableText.alpha = alpha;
+  availableText.alpha = canTrade ? 1 : 0.5;
   container.addChild(availableText);
 
   // Trade rate
@@ -279,7 +293,7 @@ function createResourceCard(resource, available, rate, canTrade, onClick) {
   rateText.y = 70;
   rateText.anchor.set(0.5, 0);
   rateText.style.fill = canTrade ? MATERIAL_COLORS.primary[500] : MATERIAL_COLORS.neutral[500];
-  rateText.alpha = alpha;
+  rateText.alpha = canTrade ? 1 : 0.5;
   container.addChild(rateText);
 
   // Status text
@@ -291,28 +305,32 @@ function createResourceCard(resource, available, rate, canTrade, onClick) {
   statusText.y = 85;
   statusText.anchor.set(0.5, 0);
   statusText.style.fill = canTrade ? MATERIAL_COLORS.semantic.success : MATERIAL_COLORS.semantic.error;
-  statusText.alpha = alpha;
+  statusText.alpha = canTrade ? 1 : 0.5;
   container.addChild(statusText);
 
-  // Make interactive if tradeable
+  // Make interactive if tradeable with Material Design hover effects
   if (canTrade) {
     container.eventMode = "static";
     container.cursor = "pointer";
     
     container.on("pointerover", () => {
+      animateScale(container, 1.05, 150);
       bg.clear();
-      bg.lineStyle(3, MATERIAL_COLORS.primary[400]);
-      bg.beginFill(MATERIAL_COLORS.primary[50], 0.8);
-      bg.drawRoundedRect(0, 0, 80, 100, 8);
-      bg.endFill();
+      drawMaterialCard(bg, 80, 100, {
+        elevation: 4,
+        backgroundColor: MATERIAL_COLORS.primary[50],
+        borderRadius: 12
+      });
     });
 
     container.on("pointerout", () => {
+      animateScale(container, 1, 150);
       bg.clear();
-      bg.lineStyle(2, borderColor);
-      bg.beginFill(MATERIAL_COLORS.surface.secondary);
-      bg.drawRoundedRect(0, 0, 80, 100, 8);
-      bg.endFill();
+      drawMaterialCard(bg, 80, 100, {
+        elevation: 2,
+        backgroundColor: MATERIAL_COLORS.surface.secondary,
+        borderRadius: 12
+      });
     });
 
     container.on("pointertap", onClick);
@@ -339,7 +357,11 @@ function showNoTradesAvailableDialog({ app, hud, state, resPanel, graph, refresh
   messageText.y = 0;
   dialog.contentArea.addChild(messageText);
 
-  const backButton = makeButton("Back", 120, 'primary');
+  const backButton = createMaterialButton("Back", {
+    variant: 'filled',
+    size: 'medium',
+    width: 120
+  });
   backButton.container.x = (400 - 120) / 2; // Use fixed width
   backButton.container.y = 60;
   backButton.onClick(() => {
@@ -375,7 +397,11 @@ function showTradeSuccessDialog(app, tradeData, onClose) {
   messageText.style.fill = MATERIAL_COLORS.semantic.success;
   dialog.contentArea.addChild(messageText);
 
-  const continueButton = makeButton("Continue", 120, 'primary');
+  const continueButton = createMaterialButton("Continue", {
+    variant: 'filled',
+    size: 'medium',
+    width: 120
+  });
   continueButton.container.x = (400 - 120) / 2; // Use fixed width
   continueButton.container.y = 60;
   continueButton.onClick(() => {

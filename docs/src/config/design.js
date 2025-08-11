@@ -347,23 +347,3 @@ export function hexToRgb(hex) {
   };
 }
 
-// Create color with alpha
-export function withAlpha(color, alpha) {
-  return { color, alpha };
-}
-
-// Get player color by index
-export function getPlayerColor(index) {
-  const colors = [
-    COLORS.primary.red,
-    COLORS.primary.blue, 
-    COLORS.primary.orange,
-    COLORS.primary.green,
-  ];
-  return colors[index] || COLORS.ui.disabled;
-}
-
-// Get resource color by type
-export function getResourceColor(resourceType) {
-  return COLORS.resource[resourceType] || COLORS.ui.disabled;
-}

@@ -4,13 +4,8 @@
 
 import {
   COLORS,
-  DIMENSIONS,
-  TYPOGRAPHY,
   SPACING,
-  EFFECTS, 
   UI_STYLES,
-  getResourceColor,
-  getPlayerColor 
 } from "../config/materialDesign.js";
 
 // ==================== GRAPHICS HELPERS ====================

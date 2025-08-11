@@ -8,9 +8,6 @@ import {
   MATERIAL_SPACING,
   MATERIAL_SHADOWS,
   MATERIAL_MOTION,
-  createElevation,
-  getStateColor,
-  withOpacity
 } from "../config/materialDesign.js";
 
 // ==================== GRAPHICS HELPERS ====================
