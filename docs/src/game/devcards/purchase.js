@@ -43,54 +43,6 @@ export function initDevDeck(state, rng = Math) {
 }
 
 /**
- * Start development card purchase process
- * @param {object} deps - Dependencies
- */
-export function startBuyDevCard({ app, hud, state, resPanel, refreshScores }) {
-  if (state.phase !== "play") {
-    const alert = createMaterialAlert(app, {
-      title: "Invalid Action",
-      message: "You can only buy a development card on your turn.",
-    });
-    alert.show();
-    return;
-  }
-
-  initDevDeck(state);
-
-  const me = state.players[state.currentPlayer - 1];
-  
-  if (!canAfford(me.resources, PURCHASE_COST)) {
-    const alert = createMaterialAlert(app, {
-      title: "Insufficient Resources",
-      message: "You need 1 ore, 1 wheat, and 1 sheep to buy a development card.",
-    });
-    alert.show();
-    return;
-  }
-  
-  if (!state.devDeck?.length) {
-    const alert = createMaterialAlert(app, {
-      title: "No Cards Available",
-      message: "The development card deck is empty.",
-    });
-    alert.show();
-    return;
-  }
-
-  // Show purchase confirmation
-  const confirm = createMaterialConfirm(app, {
-    title: "Buy Development Card",
-    message: "Purchase a random development card for 1 ore, 1 wheat, and 1 sheep?",
-    onConfirm: () => {
-      executePurchase({ state, resPanel, refreshScores, hud, app });
-    }
-  });
-  
-  confirm.show();
-}
-
-/**
  * Execute the card purchase
  * @param {object} deps - Dependencies
  */

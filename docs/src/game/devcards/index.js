@@ -1,4 +1,4 @@
-// Public API: initDevDeck, startBuyDevCard, startPlayDev
+// Public API: initDevDeck, startPlayDev
 import { drawDevCardFace, pretty, prettyDesc, makeBigButton } from "./ui.js";
 import { playKnight } from "./effects/knight.js";
 import { playRoadBuilding } from "./effects/roadBuilding.js";
@@ -30,26 +30,6 @@ export function initDevDeck(state, rng = Math) {
     p.devNew ??= { knight:0, vp:0, year_of_plenty:0, monopoly:0, road_building:0 };
     p.knightsPlayed ??= 0;
   });
-}
-
-const COST = { ore:1, wheat:1, sheep:1 };
-function canPay(res, cost){ return Object.keys(cost).every(k => (res[k] || 0) >= cost[k]); }
-function pay(res, cost){ for (const k in cost) res[k] -= cost[k]; }
-
-export function startBuyDevCard({ app, hud, state, resPanel }) {
-  if (state.phase !== "play") { hud.showResult("You can only buy a development card on your turn."); return; }
-  initDevDeck(state);
-  const me = state.players[state.currentPlayer - 1];
-  if (!canPay(me.resources, COST)) { hud.showResult("Need 1 ore, 1 wheat, 1 sheep."); return; }
-  if (!state.devDeck?.length) { hud.showResult("Development deck is empty."); return; }
-
-  pay(me.resources, COST);
-  const card = state.devDeck.pop();
-  me.dev[card] = (me.dev[card] || 0) + 1;
-  me.devNew[card] = (me.devNew[card] || 0) + 1;
-
-  resPanel?.updateResources?.(state.players);
-  showDevReveal({ app, card, onClose: () => hud.showResult(`You received: ${pretty(card)}`) });
 }
 
 export function startPlayDev({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder }) {

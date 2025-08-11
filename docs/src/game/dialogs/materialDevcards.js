@@ -77,67 +77,47 @@ export function showMaterialBuyDevCardDialog({ app, hud, state, resPanel, refres
     return;
   }
 
-  // Create confirmation dialog using predefined LARGE type
+  // Create custom dialog with resource cost display
   const dialog = createMaterialDialog(app, {
-    type: MATERIAL_DIALOG_TYPES.LARGE, // Use existing large type (700x500)
+    type: MATERIAL_DIALOG_TYPES.MEDIUM,
     title: "Buy Development Card",
     animation: 'scale'
   });
 
-  // Create main content container with proper layout for 700px width dialog
+  // Create main content container
   const mainContainer = new PIXI.Container();
   dialog.addContent(mainContainer);
 
-  let currentY = 30; // Start position with more top padding
+  let currentY = 0;
 
   // Description
   const description = createMaterialText(
-    "Purchase a random development card for the following cost:",
+    "Purchase a random development card for:",
     'bodyLarge',
     { fill: MATERIAL_COLORS.neutral[300] }
   );
-  description.x = 50; // More left padding for 700px width
+  description.anchor.set(0.5, 0);
+  description.x = 160; // Center in 500px dialog width
   description.y = currentY;
   mainContainer.addChild(description);
-  currentY += 50;
-
-  // Cost display
-  const costContainer = createCostDisplay(cost);
-  costContainer.x = (700 - 500) / 2; // Center in 700px width
-  costContainer.y = currentY;
-  mainContainer.addChild(costContainer);
-  currentY += 120;
-
-  // Resources label
-  const resourcesLabel = createMaterialText('Your Resources:', 'label', {
-    fill: MATERIAL_COLORS.primary[200],
-    fontSize: 16
-  });
-  resourcesLabel.x = 50; // Match description padding
-  resourcesLabel.y = currentY;
-  mainContainer.addChild(resourcesLabel);
   currentY += 40;
 
-  // Resources display
-  const resourcesContainer = createResourceDisplay(me.resources);
-  resourcesContainer.x = (700 - 550) / 2; // Center in 700px width
-  resourcesContainer.y = currentY;
-  mainContainer.addChild(resourcesContainer);
+  // Cost display with colored resource boxes
+  const costContainer = createCostDisplay(cost);
+  costContainer.x = 60;
+  costContainer.y = currentY;
+  mainContainer.addChild(costContainer);
 
   // Add buttons
   dialog.addButton('Cancel', {
     variant: 'text'
   });
 
-  const canAffordCard = canAfford(me.resources, cost);
   dialog.addButton('Buy Card', {
     variant: 'filled',
-    disabled: !canAffordCard,
     onClick: () => {
       const cardType = executeBuyDevCard({ state, resPanel, refreshScores, hud });
       dialog.close();
-      
-      // Show success dialog with the card you got
       showCardPurchaseResult(app, cardType);
     }
   });
@@ -223,67 +203,63 @@ export function showMaterialPlayDevCardDialog({ app, hud, state, resPanel, board
 function createCostDisplay(cost) {
   const container = new PIXI.Container();
 
-  // Background with proper size for custom dialog
-  const bg = new PIXI.Graphics();
-  drawMaterialCard(bg, 500, 80, { // Fixed width for 600px dialog
-    elevation: 2,
-    backgroundColor: MATERIAL_COLORS.surface.primary,
-    borderRadius: 16
-  });
-  container.addChild(bg);
-
-  // Position cost chips horizontally centered
+  // Position cost chips horizontally
   const chips = [];
   Object.entries(cost).forEach(([resource, amount]) => {
     const costChip = createCostChip(resource, amount);
     chips.push(costChip);
   });
 
-  // Center the chips horizontally
-  const totalChipWidth = chips.length * 60 + (chips.length - 1) * 20; // chip width + gaps
-  const startX = (500 - totalChipWidth) / 2;
+  // Arrange chips horizontally with better spacing
+  const chipWidth = 70;
+  const chipGap = 25;
+  const totalWidth = chips.length * chipWidth + (chips.length - 1) * chipGap;
   
   chips.forEach((chip, index) => {
-    chip.x = startX + index * 80; // 60 width + 20 gap
-    chip.y = 20; // Centered vertically in 80px height
+    chip.x = index * (chipWidth + chipGap);
+    chip.y = 0;
     container.addChild(chip);
   });
+
+  // Store total width for centering
+  container.width = totalWidth;
 
   return container;
 }
 
 /**
- * Create a cost chip component
+ * Create a cost chip component (similar to resource selection chips)
  */
 function createCostChip(resource, amount) {
   const container = new PIXI.Container();
   
-  // Background chip
+  // Background chip with resource color
   const bg = new PIXI.Graphics();
-  drawMaterialChip(bg, 80, 50, {
-    backgroundColor: getMaterialResourceColor(resource),
-    variant: 'filled'
-  });
+  const color = getMaterialResourceColor(resource);
+  bg.beginFill(color);
+  bg.drawRoundedRect(0, 0, 70, 60, 12);
+  bg.endFill();
   container.addChild(bg);
 
-  // Resource icon (simplified)
-  const nameText = createMaterialText(resource.charAt(0).toUpperCase(), 'label', {
+  // Resource name
+  const nameText = createMaterialText(resource.charAt(0).toUpperCase() + resource.slice(1), 'label', {
     fill: MATERIAL_COLORS.neutral[0],
-    fontSize: 16
+    fontSize: 14
   });
   nameText.anchor.set(0.5);
-  nameText.x = 25;
-  nameText.y = 15;
+  nameText.x = 35;
+  nameText.y = 18;
   container.addChild(nameText);
 
   // Amount
   const amountText = createMaterialText(amount.toString(), 'counter', {
     fill: MATERIAL_COLORS.neutral[0],
-    fontSize: 18
+    fontSize: 20,
+    fontWeight: 'bold'
   });
   amountText.anchor.set(0.5);
-  amountText.x = 55;
-  amountText.y = 25;
+  amountText.x = 35;
+  amountText.y = 38;
   container.addChild(amountText);
 
   return container;
