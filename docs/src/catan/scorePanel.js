@@ -35,7 +35,7 @@ export function createScorePanel(app, state) {
 
     // Panel background - Material Design surface
     bg.clear();
-    bg.beginFill(MATERIAL_COLORS.surface.primary, 0.9);
+    bg.beginFill(MATERIAL_COLORS.surface.primary, 1);
     bg.drawRoundedRect(0, 0, width, height, 12); // 12px border radius
     bg.endFill();
 

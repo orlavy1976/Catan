@@ -245,9 +245,37 @@ function initializeGame() {
         const loaded = loadGameState();
         if (loaded) {
           console.log("✅ Loaded saved game state");
+          console.log("🔍 Loaded state phase:", state.phase);
+          console.log("🔍 Loaded state _hasRolled:", state._hasRolled);
+          console.log("🔍 Loaded state currentPlayer:", state.currentPlayer);
+          console.log("🔍 Loaded state turn:", state.turn);
           
           // Ensure dev deck is properly initialized even for loaded games
           initDevDeck(state);
+          
+          // Restore all buildings visually on the board
+          restoreBuildingsFromState();
+          
+          // Ensure critical play phase state is set correctly
+          if (state.phase === "play") {
+            // If _hasRolled is not saved or is undefined, infer it from game state
+            if (state._hasRolled === undefined || state._hasRolled === null) {
+              const me = state.players[state.currentPlayer - 1];
+              const hasResources = Object.values(me.resources || {}).some(amount => amount > 0);
+              const hasBuildings = (me.settlements?.length > 0) || (me.roads?.length > 0);
+              
+              // Assume player has rolled if:
+              // 1. They have resources (gained from dice rolls)
+              // 2. It's not turn 1 (setup is complete)
+              // 3. They have buildings (beyond setup phase)
+              state._hasRolled = hasResources || state.turn > 1 || hasBuildings;
+              console.log("🔄 Inferred _hasRolled =", state._hasRolled, "from game state:", {
+                hasResources, turn: state.turn, hasBuildings
+              });
+            } else {
+              console.log("🔄 Using saved _hasRolled =", state._hasRolled);
+            }
+          }
           
           hud.showSuccess("Game loaded successfully!", 3000);
           
@@ -575,6 +603,56 @@ function debugInit() {
   // Force update resource panel to show debug dev cards
   resPanel.updateResources(state.players);
   console.log("🐛 DEBUG: debugInit complete, final first player dev cards:", state.players[0].dev);
+}
+
+// Restore all buildings visually from loaded game state
+function restoreBuildingsFromState() {
+  console.log("🏗️ Restoring buildings from loaded state...");
+  
+  // Clear any existing building sprites
+  builder.roadSprites.clear();
+  builder.townSprites.clear();
+  
+  // Restore settlements and cities for all players
+  state.players.forEach((player, playerIndex) => {
+    console.log(`🏠 Restoring buildings for player ${playerIndex + 1}:`, {
+      settlements: player.settlements?.length || 0,
+      cities: player.cities?.length || 0,
+      roads: player.roads?.length || 0
+    });
+    
+    // Restore settlements
+    if (player.settlements) {
+      player.settlements.forEach(vId => {
+        builder.placeSettlement(vId, player.colorIdx);
+      });
+    }
+    
+    // Restore cities (these replace settlements visually)
+    if (player.cities) {
+      player.cities.forEach(vId => {
+        builder.placeCity(vId, player.colorIdx);
+      });
+    }
+    
+    // Restore roads
+    if (player.roads) {
+      player.roads.forEach(eId => {
+        builder.placeRoad(eId, player.colorIdx);
+      });
+    }
+  });
+  
+  // Restore robber position
+  if (state.robberTile !== undefined && robberSpriteRef?.sprite && tileSprites[state.robberTile]) {
+    const robberTile = tileSprites[state.robberTile];
+    robberSpriteRef.sprite.x = robberTile.center.x;
+    robberSpriteRef.sprite.y = robberTile.center.y;
+    robberSpriteRef.sprite.zIndex = 9999;
+    console.log(`🔸 Restored robber to tile ${state.robberTile}`);
+  }
+  
+  console.log("✅ Buildings restoration complete");
 }
 
 function computeInitialResourcesForVertex(vertexId) {
