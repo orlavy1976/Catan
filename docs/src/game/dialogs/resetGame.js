@@ -55,8 +55,8 @@ Would you like to continue the saved game or start a new one?`;
   const dialog = createMaterialConfirm(app, {
     title: "Load Saved Game",
     message: message,
-    confirmText: "Continue Saved Game",
-    cancelText: "Start New Game",
+    confirmText: "Load",
+    cancelText: "Start New",
     variant: 'info',
     onConfirm: () => {
       console.log("Loading saved game");

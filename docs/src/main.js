@@ -368,7 +368,7 @@ function startNewGame() {
 // =====================
 // ===== DEBUG MODE ====
 // =====================
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 // Start game initialization
 initializeGame();

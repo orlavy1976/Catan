@@ -460,8 +460,8 @@ export function createMaterialRow(options = {}) {
    */
   function resize(width) {
     background.clear();
-    background.beginFill(MATERIAL_COLORS.primary[500], 0.08);
-    background.drawRoundedRect(0, 0, width, height, 8);
+    background.beginFill(MATERIAL_COLORS.primary[500], 0.5);
+    background.drawRoundedRect(0, 0, width, height + 10, 8);
     background.endFill();
     
     // Position actions on the right

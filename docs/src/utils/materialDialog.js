@@ -118,14 +118,43 @@ export function createMaterialDialog(app, options = {}) {
   const buttonContainer = new PIXI.Container();
   dialog.addChild(buttonContainer);
 
-  // Position button container at bottom
-  buttonContainer.x = MATERIAL_SPACING[6];
-  buttonContainer.y = height - MATERIAL_SPACING[6] - 48; // 48 = button height
-
   // State
   let isVisible = false;
   let closeCallback = onClose; // Set initial close callback from options
   const buttons = [];
+  let currentHeight = height; // Track current dialog height
+
+  // Layout function to adjust dialog size based on content
+  function updateLayout() {
+    // Calculate content height
+    const titleHeight = titleText ? titleText.height + MATERIAL_SPACING[4] : 0;
+    const contentHeight = contentArea.height || 0;
+    const buttonHeight = 48; // Standard button height
+    const padding = MATERIAL_SPACING[6] * 2; // Top and bottom padding
+    const spacing = MATERIAL_SPACING[4]; // Spacing between title and content
+    const buttonSpacing = MATERIAL_SPACING[4]; // Spacing before buttons
+    
+    // Calculate required height
+    const requiredHeight = padding + titleHeight + spacing + contentHeight + buttonSpacing + buttonHeight;
+    
+    // Use the larger of the minimum height or required height
+    currentHeight = Math.max(height, requiredHeight);
+    
+    // Update dialog background
+    background.clear();
+    drawMaterialCard(background, width, currentHeight, {
+      elevation,
+      backgroundColor: MATERIAL_COLORS.surface.secondary,
+      borderRadius: 16,
+    });
+    
+    // Reposition dialog to stay centered
+    dialog.y = (app.screen.height - currentHeight) / 2;
+    
+    // Position button container dynamically based on content
+    buttonContainer.x = MATERIAL_SPACING[6];
+    buttonContainer.y = currentHeight - MATERIAL_SPACING[6] - buttonHeight;
+  }
 
   // Event handlers
   if (closeOnOverlay) {
@@ -146,6 +175,9 @@ export function createMaterialDialog(app, options = {}) {
   // Animation functions
   function show() {
     if (isVisible) return;
+    
+    // Update layout before showing
+    updateLayout();
     
     app.stage.addChild(container);
     isVisible = true;
@@ -253,11 +285,18 @@ export function createMaterialDialog(app, options = {}) {
       });
       
       buttonContainer.addChild(button.container);
+      
+      // Update layout after adding button
+      updateLayout();
+      
       return button;
     },
 
     addContent(element) {
       contentArea.addChild(element);
+      
+      // Update layout after adding content
+      updateLayout();
     },
 
     // State
