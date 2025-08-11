@@ -18,7 +18,7 @@ export function makeDevCardIcon() {
   const container = new PIXI.Container();
   
   // Card background - Material Design chip style
-  const cardSize = 24;
+  const cardSize = 36;
   const cardBg = new PIXI.Graphics();
   cardBg.beginFill(MATERIAL_COLORS.secondary[100], 1); // Light secondary color
   cardBg.drawRoundedRect(0, 0, cardSize, cardSize, 6); // Material corner radius

@@ -13,7 +13,7 @@ export function createResourcePanel(app, state) {
   const panel = createMaterialPanel(app, {
     title: "Players",
     position: 'bottom-left',
-    minWidth: 280,
+    minWidth: 420,
     minHeight: 140,
     variant: 'elevated',
     responsive: true

@@ -19,7 +19,7 @@ export function makeResIcon(kind) {
   const container = new PIXI.Container();
 
   // Icon background - Material Design chip style
-  const iconSize = 24; // Material Design icon size
+  const iconSize = 36; // Material Design icon size
   const icon = new PIXI.Graphics();
   const resourceColor = getMaterialResourceColor(kind);
   

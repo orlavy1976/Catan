@@ -45,12 +45,12 @@ export function makePlayerRow(player) {
   
   resourceIcons.forEach((icon, idx) => {
     icon.container.x = iconStartX + (idx * iconSpacing);
-    icon.container.y = 20; // Center in 60px row
+    icon.container.y = 10; // Center in 60px row
   });
 
   // Position development card icon after resource icons
   devCardIcon.container.x = iconStartX + (5 * iconSpacing) + MATERIAL_SPACING[2];
-  devCardIcon.container.y = 18; // Slightly higher for different icon size
+  devCardIcon.container.y = 10; // Slightly higher for different icon size
 
   // Track resource counts for secondary text
   const resourceCounts = {};
