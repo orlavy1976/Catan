@@ -89,14 +89,48 @@ export const MATERIAL_COLORS = {
     green: 0x16a34a,   // Forest green
   },
 
-  // Resource colors (more saturated and HD-friendly)
+  // Resource colors (unified system - matches Catan board aesthetics)
   resource: {
-    brick: 0xdc2626,   // Rich red-brown
-    wood: 0x16a34a,    // Deep forest green
-    wheat: 0xeab308,   // Golden yellow
-    sheep: 0x22c55e,   // Fresh green
-    ore: 0x6b7280,     // Steel gray
+    brick: 0xb04a3a,   // Rich brick red
+    wood: 0x256d39,    // Deep forest green
+    wheat: 0xd8b847,   // Golden wheat yellow
+    sheep: 0x7bbf6a,   // Pastoral green
+    ore: 0x6a6f7b,     // Mountain gray
     desert: 0xfbbf24,  // Sandy yellow
+  },
+
+  // Resource color variants for different states
+  resourceVariants: {
+    brick: { 
+      primary: 0xb04a3a, 
+      light: 0xd66558, 
+      dark: 0x8c3d31,
+      text: 0xffffff 
+    },
+    wood: { 
+      primary: 0x256d39, 
+      light: 0x358a4b, 
+      dark: 0x1e5a2e,
+      text: 0xffffff 
+    },
+    wheat: { 
+      primary: 0xd8b847, 
+      light: 0xe5c95f, 
+      dark: 0xb39d3c,
+      text: 0x2c2c2c 
+    },
+    sheep: { 
+      primary: 0x7bbf6a, 
+      light: 0x93cc82, 
+      dark: 0x669b56,
+      text: 0x2c2c2c 
+    },
+    ore: { 
+      primary: 0x6a6f7b, 
+      light: 0x828a98, 
+      dark: 0x555965,
+      text: 0xffffff 
+    }
   },
 };
 
@@ -489,14 +523,19 @@ export function getPlayerColor(index) {
  * Get resource color by type
  */
 export function getResourceColor(resourceType) {
-  const resourceColors = {
-    brick: 0xb24d3d,
-    wood: 0x2a6e3a,
-    wheat: 0xd9bb49,
-    sheep: 0x7dbf6a,
-    ore: 0x6c707d,
+  return MATERIAL_COLORS.resource[resourceType] || MATERIAL_COLORS.neutral[400];
+}
+
+/**
+ * Get resource color variants (primary, light, dark, text)
+ */
+export function getResourceColorVariants(resourceType) {
+  return MATERIAL_COLORS.resourceVariants[resourceType] || {
+    primary: MATERIAL_COLORS.neutral[400],
+    light: MATERIAL_COLORS.neutral[300],
+    dark: MATERIAL_COLORS.neutral[500],
+    text: MATERIAL_COLORS.neutral[900]
   };
-  return resourceColors[resourceType] || MATERIAL_COLORS.neutral[400];
 }
 
 // ==================== LEGACY COMPATIBILITY ====================

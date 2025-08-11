@@ -14,7 +14,8 @@ import {
 
 import { 
   MATERIAL_SPACING,
-  MATERIAL_MOTION
+  MATERIAL_MOTION,
+  getResourceColorVariants
 } from '../config/materialDesign.js';
 
 /**
@@ -108,16 +109,8 @@ export function createResourceDialog(app, options = {}) {
 function createResourceChip(resource, onClick) {
   const container = new PIXI.Container();
   
-  // Resource-specific colors from Catan board system
-  const resourceColors = {
-    brick: { bg: 0xb04a3a, light: 0xd66558, text: 0xffffff },
-    wood: { bg: 0x256d39, light: 0x358a4b, text: 0xffffff },
-    wheat: { bg: 0xd8b847, light: 0xe5c95f, text: 0x2c2c2c },
-    sheep: { bg: 0x7bbf6a, light: 0x93cc82, text: 0x2c2c2c },
-    ore: { bg: 0x6a6f7b, light: 0x828a98, text: 0xffffff }
-  };
-  
-  const colors = resourceColors[resource] || { bg: 0x94a3b8, light: 0xb6c5d4, text: 0x2c2c2c };
+  // Use unified resource color system
+  const colors = getResourceColorVariants(resource);
   
   // Background with elevation shadow
   const shadow = new PIXI.Graphics();
@@ -128,7 +121,7 @@ function createResourceChip(resource, onClick) {
   
   // Main background
   const bg = new PIXI.Graphics();
-  bg.beginFill(colors.bg, 1);
+  bg.beginFill(colors.primary, 1);
   bg.lineStyle(0);
   bg.drawRoundedRect(0, 0, 88, 40, 8);
   bg.endFill();
@@ -153,7 +146,7 @@ function createResourceChip(resource, onClick) {
   container.addChild(text);
   
   // Store original and hover colors for smooth transitions
-  const originalColor = colors.bg;
+  const originalColor = colors.primary;
   const hoverColor = colors.light;
   
   // Hover effects
