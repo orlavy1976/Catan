@@ -4,14 +4,15 @@
 
 import { 
   COLORS, 
-  ALPHA, 
   TYPOGRAPHY, 
   DIMENSIONS, 
   SPACING,
   EFFECTS, 
   UI_STYLES,
   Z_INDEX
-} from "../config/design.js";
+} from "../config/materialDesign.js";
+// ALPHA not available in materialDesign - using inline values
+const ALPHA = { panelBackground: 0.95, modalBackground: 0.98 };
 import { makeButton } from "../catan/ui/materialButton.js";
 import { fadeOut as materialFadeOut, drawMaterialCard, createMaterialText } from './materialUI.js';
 

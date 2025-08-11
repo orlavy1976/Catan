@@ -2,17 +2,16 @@
 // 🛠️ UI Utility Functions
 // Helper functions for common UI tasks using the design system
 
-import { 
-  COLORS, 
-  ALPHA, 
-  TYPOGRAPHY, 
-  DIMENSIONS, 
+import {
+  COLORS,
+  DIMENSIONS,
+  TYPOGRAPHY,
   SPACING,
   EFFECTS, 
   UI_STYLES,
   getResourceColor,
   getPlayerColor 
-} from "../config/design.js";
+} from "../config/materialDesign.js";
 
 // ==================== GRAPHICS HELPERS ====================
 

@@ -3,9 +3,9 @@
 
 import { 
   MATERIAL_COLORS,
-  MATERIAL_SPACING
+  MATERIAL_SPACING,
+  Z_INDEX
 } from "../config/materialDesign.js";
-import { Z_INDEX } from "../config/design.js";
 import { PLAYER_COLORS } from "../config/constants.js";
 import { 
   createMaterialText,

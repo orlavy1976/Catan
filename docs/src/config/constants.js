@@ -1,13 +1,13 @@
 // גדלים/קבועים שמשרתים את כל המודולים
-import { getPlayerColor } from "./design.js";
+import { getPlayerColor, PLAYER_COLORS } from "./materialDesign.js";
 
 export const TILE_SIZE = 80;
 
 // משאבים
 export const RES_KEYS = ["brick","wood","wheat","sheep","ore"];
 
-// צבעי שחקנים (בהתאם למה שהיה אצלך בבילדר)
-// Now using design system - but keeping this export for backward compatibility
+// צבעי שחקנים (exported from materialDesign.js)
+export { PLAYER_COLORS };
 export const PLAYER_COLORS = [
   getPlayerColor(0), // אדום
   getPlayerColor(1), // כחול

@@ -15,7 +15,7 @@ import {
   SPACING, 
   COLORS,
   TYPOGRAPHY 
-} from "../../config/design.js";
+} from "../../config/materialDesign.js";
 import { 
   createMaterialText,
   createMaterialHeadline,

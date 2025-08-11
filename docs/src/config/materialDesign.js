@@ -452,3 +452,133 @@ function adjustBrightness(color, amount) {
 export function withOpacity(color, opacity) {
   return { color, alpha: opacity };
 }
+
+// ==================== Z-INDEX LAYERS ====================
+
+export const Z_INDEX = {
+  background: 0,
+  board: 100,
+  buildings: 200,
+  ui: 900,
+  panels: 1000,
+  hud: 2000,
+  scorePanel: 4000,
+  modals: 10000,
+  overlays: 15000,
+  tooltips: 20000,
+};
+
+// ==================== PLAYER COLORS ====================
+
+// Player colors for game pieces (converted from design.js)
+export const PLAYER_COLORS = [
+  0xd32f2f, // Red
+  0x1976d2, // Blue  
+  0xffa000, // Orange
+  0x388e3c, // Green
+];
+
+/**
+ * Get player color by index
+ */
+export function getPlayerColor(index) {
+  return PLAYER_COLORS[index] || MATERIAL_COLORS.neutral[400];
+}
+
+/**
+ * Get resource color by type
+ */
+export function getResourceColor(resourceType) {
+  const resourceColors = {
+    brick: 0xb24d3d,
+    wood: 0x2a6e3a,
+    wheat: 0xd9bb49,
+    sheep: 0x7dbf6a,
+    ore: 0x6c707d,
+  };
+  return resourceColors[resourceType] || MATERIAL_COLORS.neutral[400];
+}
+
+// ==================== LEGACY COMPATIBILITY ====================
+// These exports provide compatibility with the old design.js system
+
+export const DIMENSIONS = {
+  button: {
+    height: 56,
+    heightSmall: 36,
+    heightLarge: 64,
+    minWidth: 140,
+    defaultWidth: 160,
+    wideWidth: 200,
+  },
+  borderRadius: {
+    small: 8,
+    base: 10,
+    medium: 12,
+    large: 16,
+  },
+  icon: {
+    small: 16,
+    base: 20,
+    medium: 22,
+    large: 32,
+  },
+};
+
+export const SPACING = {
+  xs: 4,
+  sm: 6,
+  base: 10,
+  md: 14,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+  buttonGap: 10,
+  panelPadding: 16,
+};
+
+export const COLORS = {
+  primary: {
+    red: 0xd32f2f,
+    blue: 0x1976d2, 
+    orange: 0xffa000,
+    green: 0x388e3c,
+  },
+  background: {
+    primary: 0x1f2937,
+    secondary: 0x111827,
+  },
+  text: {
+    primary: 0xffffff,
+    secondary: 0xffffaa,
+  },
+  ui: {
+    disabled: 0x6b7280,
+  },
+};
+
+export const TYPOGRAPHY = {
+  styles: {
+    button: { fontSize: 16, fontWeight: 'bold' },
+    buttonSmall: { fontSize: 14, fontWeight: 'normal' },
+  },
+};
+
+export const EFFECTS = {
+  border: {
+    subtle: { width: 1, color: 0xffffff, alpha: 0.12 },
+    normal: { width: 2, color: 0xffffff, alpha: 0.35 },
+  },
+  animation: {
+    fast: 150,
+    normal: 300,
+  },
+};
+
+export const UI_STYLES = {
+  panelBackground: (alpha = 0.95) => ({
+    color: COLORS.background.primary,
+    alpha: alpha,
+  }),
+};
