@@ -28,9 +28,10 @@ import {
  * @param {Function} onTrade - Trade callback
  * @param {Function} onBuyDev - Buy dev card callback
  * @param {Function} onPlayDev - Play dev card callback
+ * @param {Function} onResetGame - Reset game callback
  * @returns {object} HUD API
  */
-export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSettlement, onBuildCity, onTrade, onBuyDev, onPlayDev) {
+export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onBuildSettlement, onBuildCity, onTrade, onBuyDev, onPlayDev, onResetGame) {
   const hud = new PIXI.Container();
   root.addChild(hud);
   
@@ -92,6 +93,12 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     width: 180,
   });
 
+  const resetBtn = createMaterialButton("Reset Game", {
+    variant: 'text',
+    size: 'small',
+    width: 160,
+  });
+
   // Store button references for easy access
   const colButtons = [
     rollBtn,
@@ -101,7 +108,8 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     tradeBtn,
     buyDevBtn,
     playDevBtn,
-    endBtn
+    endBtn,
+    resetBtn
   ];
 
   // Add all button containers to HUD
@@ -228,6 +236,7 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
   addMaterialFeedback(tradeBtn, onTrade);
   addMaterialFeedback(buyDevBtn, onBuyDev);
   addMaterialFeedback(playDevBtn, onPlayDev);
+  addMaterialFeedback(resetBtn, onResetGame);
 
   // Public API functions
   function setBanner(text) {
@@ -295,6 +304,10 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     playDevBtn.setEnabled(enabled);
   }
 
+  function setResetEnabled(enabled) {
+    resetBtn.setEnabled(enabled);
+  }
+
   // Add visual state indicators for better UX
   function updateButtonStates() {
     // This could be expanded to show more visual feedback
@@ -326,6 +339,7 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     setTradeEnabled,
     setBuyDevEnabled,
     setPlayDevEnabled,
+    setResetEnabled,
     updateButtonStates, // New function for enhanced state management
   };
 }
