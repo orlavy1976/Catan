@@ -52,7 +52,7 @@ export function showLoadGameDialog(app, savedInfo, onLoadSaved, onStartNew) {
 
 Would you like to continue the saved game or start a new one?`;
 
-  createMaterialConfirm(app, {
+  const dialog = createMaterialConfirm(app, {
     title: "Load Saved Game",
     message: message,
     confirmText: "Continue Saved Game",
@@ -67,4 +67,5 @@ Would you like to continue the saved game or start a new one?`;
       onStartNew?.();
     }
   });
+  dialog.show();
 }

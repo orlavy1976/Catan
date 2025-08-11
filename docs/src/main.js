@@ -21,13 +21,13 @@ import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
 // New modern dialog system
 import { showTradeMenu } from "./game/dialogs/tradeMenu.js";
 import { showMaterialBuyDevCardDialog, showMaterialPlayDevCardDialog } from "./game/dialogs/materialDevcards.js";
-import { showResetGameDialog } from "./game/dialogs/resetGame.js";
+import { showResetGameDialog, showLoadGameDialog } from "./game/dialogs/resetGame.js";
 
 // Dev cards (מודולריים) - keep for initialization
 import { initDevDeck } from "./game/devcards/index.js";
 
 // Persistence system
-import { clearSavedState } from "./game/persistence.js";
+import { saveGameState, loadGameState, clearSavedState, hasSavedState, getSavedStateInfo, autoSave } from "./game/persistence.js";
 
 // ניקוד + פאנל
 import { computeScores } from "./game/score.js";
@@ -35,6 +35,11 @@ import { createScorePanel } from "./catan/scorePanel.js";
 
 // ✅ חדש: בדיקת ניצחון
 import { maybeHandleVictory } from "./game/victory.js";
+
+// Auto-save on state changes
+subscribe((newState) => {
+  autoSave();
+});
 
 const { app } = initApp();
 
@@ -225,32 +230,96 @@ window.addEventListener("resize", () => {
 });
 
 // =====================
+// ===== PERSISTENCE & INITIALIZATION ====
+// =====================
+
+// Initialize game with persistence check
+function initializeGame() {
+  if (hasSavedState()) {
+    const savedInfo = getSavedStateInfo();
+    console.log("🔄 Found saved game state:", savedInfo);
+    
+    showLoadGameDialog(app, savedInfo,
+      // onLoadSaved
+      () => {
+        const loaded = loadGameState();
+        if (loaded) {
+          console.log("✅ Loaded saved game state");
+          
+          // Ensure dev deck is properly initialized even for loaded games
+          initDevDeck(state);
+          
+          hud.showSuccess("Game loaded successfully!", 3000);
+          
+          // Refresh UI to match loaded state
+          refreshScores();
+          refreshHudAvailability();
+          resPanel.setCurrent(state.currentPlayer - 1);
+          resPanel.updateResources(state.players);
+          
+          // Update HUD banner based on loaded state
+          if (state.phase === "setup") {
+            hud.setBanner(`Setup Phase — Player ${state.currentPlayer}`);
+            hud.setBottom("Place your settlement and road");
+          } else {
+            hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
+            hud.setBottom(state._hasRolled ? "Build, trade, or end turn" : "Roll dice to start");
+          }
+        } else {
+          console.error("❌ Failed to load saved state, starting new game");
+          hud.showError("Failed to load saved game. Starting new game.", 5000);
+          startNewGame();
+        }
+      },
+      // onStartNew
+      () => {
+        clearSavedState();
+        startNewGame();
+      }
+    );
+  } else {
+    console.log("🆕 No saved state found, starting new game");
+    startNewGame();
+  }
+}
+
+function startNewGame() {
+  console.log("🆕 Starting new game...");
+  
+  if (DEBUG_MODE) {
+    debugInit();
+  } else {
+    startSetupPhase({
+      app, boardC, hud, resPanel, graph, builder, layout, state,
+      onFinish: () => {
+        state.phase = "play";
+        state.turn = 1;
+        state.currentPlayer = 1;
+        state._hasRolled = false;
+        hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
+        hud.setBottom(`Ready: Roll Dice`);
+        
+        // Welcome notification showcasing the new notification system
+        hud.showInfo("🎲 Game started! Roll dice to begin your turn. Click 📋 to view notification history.", 6000);
+        
+        refreshHudAvailability();
+        refreshScores();
+        resPanel.setCurrent(state.currentPlayer - 1);
+        
+        // Save initial state
+        saveGameState();
+      }
+    });
+  }
+}
+
+// =====================
 // ===== DEBUG MODE ====
 // =====================
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
-if (DEBUG_MODE) {
-  debugInit();
-} else {
-  startSetupPhase({
-    app, boardC, hud, resPanel, graph, builder, layout, state,
-    onFinish: () => {
-      state.phase = "play";
-      state.turn = 1;
-      state.currentPlayer = 1;
-      state._hasRolled = false;
-      hud.setBanner(`Turn ${state.turn} — Player ${state.currentPlayer}`);
-      hud.setBottom(`Ready: Roll Dice`);
-      
-      // Welcome notification showcasing the new notification system
-      hud.showInfo("🎲 Game started! Roll dice to begin your turn. Click 📋 to view notification history.", 6000);
-      
-      refreshHudAvailability();
-      refreshScores();
-      resPanel.setCurrent(state.currentPlayer - 1);
-    }
-  });
-}
+// Start game initialization
+initializeGame();
 
 // ---------- Play Phase handlers ----------
 function onRolled(evt) {
