@@ -10,25 +10,22 @@ import { createMaterialConfirm } from "../../utils/materialDialog.js";
 export function showResetGameDialog(app, onConfirm, onCancel) {
   console.log("🔄 showResetGameDialog called");
   
-  try {
-    createMaterialConfirm(app, {
-      title: "Reset Game",
-      message: "Are you sure you want to reset the game? All progress will be lost and cannot be recovered.",
-      confirmText: "Reset Game",
-      cancelText: "Cancel",
-      onConfirm: () => {
-        console.log("Game reset confirmed");
-        onConfirm?.();
-      },
-      onCancel: () => {
-        console.log("Game reset cancelled");
-        onCancel?.();
-      }
-    });
-    console.log("🔄 showResetGameDialog dialog created successfully");
-  } catch (error) {
-    console.error("🔄 Error in showResetGameDialog:", error);
-  }
+  const dialog = createMaterialConfirm(app, {
+    title: "Reset Game",
+    message: "Are you sure you want to reset the game? All progress will be lost and cannot be recovered.",
+    confirmText: "Reset Game",
+    cancelText: "Cancel",
+    onConfirm: () => {
+      console.log("Game reset confirmed");
+      onConfirm?.();
+    },
+    onCancel: () => {
+      console.log("Game reset cancelled");
+      onCancel?.();
+    }
+  });
+  console.log("🔄 showResetGameDialog dialog created successfully");
+  dialog.show();
 }
 
 /**

@@ -284,9 +284,13 @@ export function createMaterialAlert(app, options = {}) {
     ...options
   });
 
-  // Add message content
+  // Add message content with word wrapping for long messages
   if (message) {
-    const messageText = createMaterialText(message, 'bodyLarge');
+    const messageText = createMaterialText(message, 'bodyLarge', {
+      wordWrap: true,
+      wordWrapWidth: 330, // Leave room for dialog padding (400 - 70px total padding)
+      align: 'left'
+    });
     dialog.addContent(messageText);
   }
 
@@ -318,9 +322,13 @@ export function createMaterialConfirm(app, options = {}) {
     ...options
   });
 
-  // Add message content
+  // Add message content with word wrapping for long messages
   if (message) {
-    const messageText = createMaterialText(message, 'bodyLarge');
+    const messageText = createMaterialText(message, 'bodyLarge', {
+      wordWrap: true,
+      wordWrapWidth: 380, // Leave room for dialog padding (450 - 70px total padding)
+      align: 'left'
+    });
     dialog.addContent(messageText);
   }
 
@@ -357,9 +365,13 @@ export function createMaterialChoice(app, options = {}) {
     ...options
   });
 
-  // Add message content
+  // Add message content with word wrapping for long messages
   if (message) {
-    const messageText = createMaterialText(message, 'bodyLarge');
+    const messageText = createMaterialText(message, 'bodyLarge', {
+      wordWrap: true,
+      wordWrapWidth: 430, // Leave room for dialog padding (500 - 70px total padding)
+      align: 'left'
+    });
     dialog.addContent(messageText);
   }
 

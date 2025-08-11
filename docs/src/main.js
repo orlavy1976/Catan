@@ -21,9 +21,13 @@ import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
 // New modern dialog system
 import { showTradeMenu } from "./game/dialogs/tradeMenu.js";
 import { showMaterialBuyDevCardDialog, showMaterialPlayDevCardDialog } from "./game/dialogs/materialDevcards.js";
+import { showResetGameDialog } from "./game/dialogs/resetGame.js";
 
 // Dev cards (מודולריים) - keep for initialization
 import { initDevDeck } from "./game/devcards/index.js";
+
+// Persistence system
+import { clearSavedState } from "./game/persistence.js";
 
 // ניקוד + פאנל
 import { computeScores } from "./game/score.js";
@@ -140,6 +144,26 @@ const hud = createMaterialHUD(
       showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores, refreshHudAvailability });
     } catch (error) {
       console.error("Error in play dev card dialog:", error);
+    }
+  },
+  // onResetGame
+  () => {
+    try {
+      console.log("🔄 Reset game button clicked!");
+      showResetGameDialog(app, 
+        // onConfirm
+        () => {
+          console.log("🔄 Resetting game...");
+          clearSavedState();
+          window.location.reload(); // Simple way to reset everything
+        },
+        // onCancel
+        () => {
+          console.log("🔄 Reset cancelled");
+        }
+      );
+    } catch (error) {
+      console.error("Error in reset game dialog:", error);
     }
   }
 );
@@ -319,6 +343,7 @@ function refreshHudAvailability() {
   hud.setTradeEnabled(false);
   hud.setBuyDevEnabled(false);
   hud.setPlayDevEnabled(false);
+  hud.setResetEnabled(true); // Reset is always available
 
   if (state.phase !== "play") return;
 
