@@ -44,11 +44,14 @@ subscribe((newState) => {
 
 const { app } = initApp();
 
-// ---------- Board ----------
-const { layout, boardC, tileSprites, axials, robberSpriteRef } = buildBoard(app, root);
+// Board and UI variables will be initialized after state is loaded
+let layout, boardC, tileSprites, axials, robberSpriteRef;
+let hud, resPanel, scorePanel, graph, builder;
 
-// Fit board to screen with responsive UI support
+// Board layout function (needs to be available for responsive design)
 function layoutBoard() {
+  if (!tileSprites || tileSprites.length === 0) return;
+  
   const xs = tileSprites.map(t => t.center.x);
   const ys = tileSprites.map(t => t.center.y);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
@@ -99,100 +102,111 @@ function layoutBoard() {
   
   console.log("📐 Board positioned at:", boardC.x, boardC.y, "Scale:", s);
 }
-layoutBoard();
 
-// ---------- UI ----------
-const hud = createMaterialHUD(
-  app,
-  root,
-  onRolled,
-  endTurn,
-  // onBuildRoad
-  () => {
-    if (state.phase !== "play" || !state._hasRolled) return;
-    startBuildRoad({ app, boardC, hud, state, graph, builder });
-  },
-  // onBuildSettlement
-  () => {
-    if (state.phase !== "play" || !state._hasRolled) return;
-    startBuildSettlement({ app, boardC, hud, state, graph, builder });
-  },
-  // onBuildCity
-  () => {
-    if (state.phase !== "play" || !state._hasRolled) return;
-    startBuildCity({ app, boardC, hud, state, graph, builder });
-  },
-  // onTrade
-  () => {
-    try {
-      console.log("🛍️ Trade");
-      showTradeMenu({ app, hud, state, resPanel, graph, refreshHudAvailability });
-    } catch (error) {
-      console.error("Error in trade menu:", error);
+// Initialize board and UI components after state is loaded
+function initializeBoardAndUI() {
+  console.log("🎮 Initializing board and UI...");
+  
+  // ---------- Board ----------
+  ({ layout, boardC, tileSprites, axials, robberSpriteRef } = buildBoard(app, root));
+
+  layoutBoard();
+
+  // ---------- UI ----------
+  hud = createMaterialHUD(
+    app,
+    root,
+    onRolled,
+    endTurn,
+    // onBuildRoad
+    () => {
+      if (state.phase !== "play" || !state._hasRolled) return;
+      startBuildRoad({ app, boardC, hud, state, graph, builder });
+    },
+    // onBuildSettlement
+    () => {
+      if (state.phase !== "play" || !state._hasRolled) return;
+      startBuildSettlement({ app, boardC, hud, state, graph, builder });
+    },
+    // onBuildCity
+    () => {
+      if (state.phase !== "play" || !state._hasRolled) return;
+      startBuildCity({ app, boardC, hud, state, graph, builder });
+    },
+    // onTrade
+    () => {
+      try {
+        console.log("🛍️ Trade");
+        showTradeMenu({ app, hud, state, resPanel, graph, refreshHudAvailability });
+      } catch (error) {
+        console.error("Error in trade menu:", error);
+      }
+    },
+    // onBuyDev
+    () => {
+      try {
+        console.log("🃏 Buy dev card - Starting...");
+        console.log("State phase:", state.phase);
+        console.log("Has rolled:", state._hasRolled);
+        showMaterialBuyDevCardDialog({ app, hud, state, resPanel, refreshScores });
+        console.log("🃏 Buy dev card - Dialog called successfully");
+      } catch (error) {
+        console.error("Error in buy dev card dialog:", error);
+      }
+    },
+    // onPlayDev
+    () => {
+      try {
+        console.log("🎯 Play dev card");
+        showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores, refreshHudAvailability });
+      } catch (error) {
+        console.error("Error in play dev card dialog:", error);
+      }
+    },
+    // onResetGame
+    () => {
+      try {
+        console.log("🔄 Reset game button clicked!");
+        showResetGameDialog(app, 
+          // onConfirm
+          () => {
+            console.log("🔄 Resetting game...");
+            clearSavedState();
+            window.location.reload(); // Simple way to reset everything
+          },
+          // onCancel
+          () => {
+            console.log("🔄 Reset cancelled");
+          }
+        );
+      } catch (error) {
+        console.error("Error in reset game dialog:", error);
+      }
     }
-  },
-  // onBuyDev
-  () => {
-    try {
-      console.log("🃏 Buy dev card - Starting...");
-      console.log("State phase:", state.phase);
-      console.log("Has rolled:", state._hasRolled);
-      showMaterialBuyDevCardDialog({ app, hud, state, resPanel, refreshScores });
-      console.log("🃏 Buy dev card - Dialog called successfully");
-    } catch (error) {
-      console.error("Error in buy dev card dialog:", error);
-    }
-  },
-  // onPlayDev
-  () => {
-    try {
-      console.log("🎯 Play dev card");
-      showMaterialPlayDevCardDialog({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, builder, refreshScores, refreshHudAvailability });
-    } catch (error) {
-      console.error("Error in play dev card dialog:", error);
-    }
-  },
-  // onResetGame
-  () => {
-    try {
-      console.log("🔄 Reset game button clicked!");
-      showResetGameDialog(app, 
-        // onConfirm
-        () => {
-          console.log("🔄 Resetting game...");
-          clearSavedState();
-          window.location.reload(); // Simple way to reset everything
-        },
-        // onCancel
-        () => {
-          console.log("🔄 Reset cancelled");
-        }
-      );
-    } catch (error) {
-      console.error("Error in reset game dialog:", error);
-    }
-  }
-);
+  );
 
-const resPanel = createResourcePanel(app, state);
-subscribe((s) => {
-  resPanel.updateResources(s.players, s);
-  resPanel.setCurrent(s.currentPlayer - 1);
-  refreshHudAvailability();
-  refreshScores();
-});
-resPanel.setCurrent(state.currentPlayer - 1);
+  resPanel = createResourcePanel(app, state);
+  subscribe((s) => {
+    resPanel.updateResources(s.players, s);
+    resPanel.setCurrent(s.currentPlayer - 1);
+    refreshHudAvailability();
+    refreshScores();
+  });
+  resPanel.setCurrent(state.currentPlayer - 1);
 
-// ⬅️ פאנל ניקוד
-const scorePanel = createScorePanel(app, state);
-root.addChild(scorePanel.container);
+  // ⬅️ פאנל ניקוד
+  scorePanel = createScorePanel(app, state);
+  root.addChild(scorePanel.container);
 
-// ---------- Graph/Builder ----------
-const graph = buildGraph(axials, TILE_SIZE);
-const builder = makeBuilder(app, boardC, graph, state);
+  // ---------- Graph/Builder ----------
+  graph = buildGraph(axials, TILE_SIZE);
+  builder = makeBuilder(app, boardC, graph, state);
 
-// ---------- Dev Deck ----------
-initDevDeck(state);
+  // ---------- Dev Deck ----------
+  initDevDeck(state);
+  
+  console.log("✅ Board and UI initialization complete");
+}
 
 // =====================
 // ===== RESPONSIVE DESIGN ====
@@ -253,6 +267,9 @@ function initializeGame() {
           
           // Ensure dev deck is properly initialized even for loaded games
           initDevDeck(state);
+          
+          // Initialize board and UI with loaded state
+          initializeBoardAndUI();
           
           // Restore all buildings visually on the board
           restoreBuildingsFromState();
@@ -344,6 +361,12 @@ function initializeGame() {
 
 function startNewGame() {
   console.log("🆕 Starting new game...");
+  
+  // Clear any saved board layout for fresh generation
+  state.boardLayout = null;
+  
+  // Initialize board and UI for new game
+  initializeBoardAndUI();
   
   if (DEBUG_MODE) {
     debugInit();
@@ -649,15 +672,6 @@ function restoreBuildingsFromState() {
       });
     }
   });
-  
-  // Restore robber position
-  if (state.robberTile !== undefined && robberSpriteRef?.sprite && tileSprites[state.robberTile]) {
-    const robberTile = tileSprites[state.robberTile];
-    robberSpriteRef.sprite.x = robberTile.center.x;
-    robberSpriteRef.sprite.y = robberTile.center.y;
-    robberSpriteRef.sprite.zIndex = 9999;
-    console.log(`🔸 Restored robber to tile ${state.robberTile}`);
-  }
   
   console.log("✅ Buildings restoration complete");
 }

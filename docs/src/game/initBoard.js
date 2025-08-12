@@ -8,24 +8,45 @@ import { computeCoastEdges } from "../catan/coast.js";
 const DEBUG_PORTS = false; // שנה ל-true אם תרצה לראות מספור צלעות חוף (דרך drawCoastDebug)
 
 export function buildBoard(app, root) {
-  const layout = generateBoard(); // מערך אריחים עם token/kind
+  // Use saved layout if available, otherwise generate new one
+  let layout;
+  if (state.boardLayout && Array.isArray(state.boardLayout)) {
+    layout = state.boardLayout;
+    console.log("🗺️ Using saved board layout");
+  } else {
+    layout = generateBoard(); // מערך אריחים עם token/kind
+    state.boardLayout = layout; // Save the generated layout
+    console.log("🗺️ Generated new board layout");
+  }
+  
   const { boardC, axials, placeTile } = drawBoard(root, app, { size: TILE_SIZE });
 
   const tileSprites = [];
   const robberSpriteRef = { sprite: null };
 
   // === אריחים + שודד ===
+  let desertTileIndex = null;
   for (let i = 0; i < axials.length; i++) {
     const { kind, token } = layout[i];
     const g = placeTile(kind, axials[i]);
     tileSprites.push(g);
     if (kind === "desert") {
-      robberSpriteRef.sprite = drawRobber(boardC, g.center);
-      robberSpriteRef.sprite.zIndex = 9999;
-      state.robberTile = i;
+      desertTileIndex = i;
+      // Only set robber tile if not already set (for saved games)
+      if (state.robberTile === null || state.robberTile === undefined) {
+        state.robberTile = i;
+      }
     } else {
       drawToken(boardC, g.center, token);
     }
+  }
+
+  // Create robber sprite at appropriate position
+  const robberTileIndex = state.robberTile !== null && state.robberTile !== undefined ? state.robberTile : desertTileIndex;
+  if (robberTileIndex !== null && tileSprites[robberTileIndex]) {
+    robberSpriteRef.sprite = drawRobber(boardC, tileSprites[robberTileIndex].center);
+    robberSpriteRef.sprite.zIndex = 9999;
+    console.log(`🔸 Robber placed at tile ${robberTileIndex} (${layout[robberTileIndex]?.kind})`);
   }
 
   // === חישוב חוף (צלעות חיצוניות) ===
