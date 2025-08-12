@@ -1,28 +1,45 @@
 import { PLAYER_COLORS } from "../../config/constants.js";
+import { createEnhancedSettlement, createEnhancedRoad } from "./enhancedGraphics.js";
+
+export function placeRoad(boardC, graph, eId, playerIdx, roadSprites) {
+  const e = graph.edges[eId];
+  const a = graph.vertices[e.a];
+  const b = graph.vertices[e.b];
+  const color = PLAYER_COLORS[playerIdx];
+  
+  // Create enhanced road with stone texture and perspective
+  const road = createEnhancedRoad(a, b, color, {
+    scale: 1,
+    showDetails: true,
+    animate: true
+  });
+  
+  // ודא שהדרכים מופיעות מתחת ליישובים
+  road.zIndex = 1; // דרכים ברמה נמוכה
+  
+  boardC.addChild(road);
+  roadSprites.set(eId, road);
+}
 
 export function placeSettlement(boardC, graph, vId, playerIdx, townSprites) {
   const v = graph.vertices[vId];
   const color = PLAYER_COLORS[playerIdx];
-  const g = new PIXI.Graphics();
-  g.beginFill(color);
-  g.drawPolygon(-12,-14, 0,-24, 12,-14, 12,8, -12,8);
-  g.endFill();
-  g.lineStyle({ width: 2, color: 0x000000, alpha: 0.35 });
-  g.drawPolygon(-12,-14, 0,-24, 12,-14, 12,8, -12,8);
-  g.x = v.x; g.y = v.y;
-  boardC.addChild(g);
-  townSprites.set(vId, g);
-}
-
-export function placeRoad(boardC, graph, eId, playerIdx, roadSprites) {
-  const e = graph.edges[eId];
-  const a = graph.vertices[e.a], b = graph.vertices[e.b];
-  const color = PLAYER_COLORS[playerIdx];
-  const g = new PIXI.Graphics();
-  g.lineStyle({ width: 12, color, alpha: 0.95, cap: 'round' });
-  g.moveTo(a.x, a.y); g.lineTo(b.x, b.y);
-  boardC.addChild(g);
-  roadSprites.set(eId, g);
+  
+  // Create enhanced settlement with architectural details
+  const settlement = createEnhancedSettlement(color, {
+    scale: 1,
+    showDetails: true,
+    animate: true
+  });
+  
+  settlement.x = v.x;
+  settlement.y = v.y;
+  
+  // ודא שיישובים מופיעים מעל הדרכים
+  settlement.zIndex = 10; // יישובים ברמה גבוהה
+  
+  boardC.addChild(settlement);
+  townSprites.set(vId, settlement);
 }
 
 // 🆕 עיר: מחליפה את הספרייט של היישוב

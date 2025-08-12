@@ -7,6 +7,7 @@ export function drawBoard(root, app, options = {}) {
   const textures = createTextures(app ?? PIXI.Application.shared ?? PIXI.app ?? { renderer: PIXI.autoDetectRenderer?.() });
 
   const boardC = new PIXI.Container();
+  boardC.sortableChildren = true; // אפשר מיון לפי Z-index
   root.addChild(boardC);
 
   // Sea backdrop with texture

@@ -1,22 +1,39 @@
+import { createEnhancedSettlement, createEnhancedRoad } from "./enhancedGraphics.js";
+
 export function drawSettlementGhost(layers, graph, vId, color, alpha=0.35) {
   const v = graph.vertices[vId];
-  const g = new PIXI.Graphics();
-  g.beginFill(color, alpha);
-  g.drawPolygon(-12,-14, 0,-24, 12,-14, 12,8, -12,8);
-  g.endFill();
-  g.lineStyle({ width: 2, color: 0x000000, alpha: 0.2 });
-  g.drawPolygon(-12,-14, 0,-24, 12,-14, 12,8, -12,8);
-  g.x = v.x; g.y = v.y;
-  layers.ghosts.addChild(g);
+  
+  // Create enhanced settlement ghost with reduced details and transparency
+  const ghost = createEnhancedSettlement(color, {
+    scale: 1,
+    showDetails: false, // Simplified for ghost preview
+    animate: false      // No animation for ghost
+  });
+  
+  // Apply ghost transparency
+  ghost.alpha = alpha;
+  ghost.x = v.x;
+  ghost.y = v.y;
+  
+  layers.ghosts.addChild(ghost);
 }
 
 export function drawRoadGhost(layers, graph, eId, color, alpha=0.35) {
   const e = graph.edges[eId];
-  const a = graph.vertices[e.a], b = graph.vertices[e.b];
-  const g = new PIXI.Graphics();
-  g.lineStyle({ width: 10, color, alpha, cap: 'round' });
-  g.moveTo(a.x, a.y); g.lineTo(b.x, b.y);
-  layers.ghosts.addChild(g);
+  const a = graph.vertices[e.a];
+  const b = graph.vertices[e.b];
+  
+  // Simple enhanced road ghost - just improved visual style, no complex effects
+  const ghost = createEnhancedRoad(a, b, color, {
+    scale: 1,
+    showDetails: false, // No texture details for ghost
+    animate: false      // No animation for ghost
+  });
+  
+  // Apply ghost transparency
+  ghost.alpha = alpha;
+  
+  layers.ghosts.addChild(ghost);
 }
 
 // 🆕
