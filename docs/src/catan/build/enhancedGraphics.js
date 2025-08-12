@@ -245,6 +245,16 @@ export function createEnhancedCity(color, options = {}) {
     animateFade(container, 1, 600);
   }
 
+  // Add hover effects for interactive smoke from multiple chimneys
+  addHoverEffects(container, scale, () => {
+    // Main chimney smoke
+    createSmokeParticles(container, 8 * scale, -26 * scale, scale);
+    // Side chimney smoke (delayed)
+    setTimeout(() => {
+      createSmokeParticles(container, -12 * scale, -6 * scale, scale * 0.8);
+    }, 200);
+  });
+
   return container;
 }
 
@@ -539,7 +549,56 @@ export function createEnhancedSettlement(color, options = {}) {
     animateFade(container, 1, 400);
   }
 
+  // Add hover effects for interactive smoke
+  addHoverEffects(container, scale, () => {
+    // Create smoke when hovering
+    createSmokeParticles(container, 9.5 * scale, -21 * scale, scale);
+  });
+
   return container;
+}
+
+/**
+ * Add hover effects to a building (settlement or city)
+ * @param {PIXI.Container} container - Building container
+ * @param {number} scale - Scale factor
+ * @param {Function} onHover - Function to call on hover
+ */
+function addHoverEffects(container, scale, onHover) {
+  container.eventMode = 'static';
+  container.cursor = 'pointer';
+  
+  let isHovering = false;
+  let smokeInterval = null;
+  
+  container.on('pointerover', () => {
+    if (isHovering) return;
+    isHovering = true;
+    
+    // Scale up slightly on hover
+    animateScale(container, scale * 1.1, 200);
+    
+    // Start continuous smoke effect
+    onHover(); // Initial smoke
+    smokeInterval = setInterval(() => {
+      if (isHovering) {
+        onHover();
+      }
+    }, 1500); // New smoke every 1.5 seconds
+  });
+  
+  container.on('pointerout', () => {
+    isHovering = false;
+    
+    // Scale back to normal
+    animateScale(container, scale, 200);
+    
+    // Stop smoke effect
+    if (smokeInterval) {
+      clearInterval(smokeInterval);
+      smokeInterval = null;
+    }
+  });
 }
 
 /**
@@ -550,27 +609,33 @@ export function createEnhancedSettlement(color, options = {}) {
  * @param {number} scale - Scale factor
  */
 function createSmokeParticles(parent, x, y, scale) {
-  const particleCount = 3;
+  const particleCount = 4; // More particles for better effect
   
   for (let i = 0; i < particleCount; i++) {
     setTimeout(() => {
       const particle = new PIXI.Graphics();
-      particle.beginFill(0xffffff, 0.4);
-      particle.drawCircle(0, 0, (1.5 + Math.random()) * scale);
+      const particleSize = (1.5 + Math.random()) * scale;
+      
+      // Different shades of smoke
+      const smokeShades = [0xffffff, 0xf0f0f0, 0xe0e0e0, 0xd0d0d0];
+      const smokeColor = smokeShades[Math.floor(Math.random() * smokeShades.length)];
+      
+      particle.beginFill(smokeColor, 0.5 + Math.random() * 0.3);
+      particle.drawCircle(0, 0, particleSize);
       particle.endFill();
       
-      particle.x = x + (Math.random() - 0.5) * 2 * scale;
+      particle.x = x + (Math.random() - 0.5) * 3 * scale;
       particle.y = y;
       particle.zIndex = 10;
       parent.addChild(particle);
       
       // Animate particle rising and fading
-      const duration = 2000 + Math.random() * 1000;
-      const targetY = y - 20 * scale - Math.random() * 10 * scale;
+      const duration = 2500 + Math.random() * 1000;
+      const targetY = y - 25 * scale - Math.random() * 15 * scale;
       
       animateParticle(particle, targetY, duration);
       
-    }, i * 800 + Math.random() * 400);
+    }, i * 150 + Math.random() * 100); // Stagger particle creation
   }
 }
 
@@ -582,7 +647,9 @@ function createSmokeParticles(parent, x, y, scale) {
  */
 function animateParticle(particle, targetY, duration) {
   const startY = particle.y;
+  const startX = particle.x;
   const startTime = Date.now();
+  const startScale = particle.scale.x;
   
   function updateParticle() {
     const elapsed = Date.now() - startTime;
@@ -594,13 +661,20 @@ function animateParticle(particle, targetY, duration) {
       return;
     }
     
-    // Ease out motion
-    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    // Ease out motion with slight acceleration at the end (wind effect)
+    const easeProgress = progress < 0.8 ? 
+      1 - Math.pow(1 - progress, 2) : 
+      0.8 + (progress - 0.8) * 2; // Faster at the end
     
     particle.y = startY + (targetY - startY) * easeProgress;
-    particle.x += (Math.random() - 0.5) * 0.5; // Slight horizontal drift
-    particle.alpha = 1 - progress; // Fade out
-    particle.scale.set(1 + progress * 0.5); // Grow slightly
+    
+    // Add horizontal drift (wind effect)
+    const windStrength = Math.sin(elapsed * 0.003) * 2 + Math.sin(elapsed * 0.007) * 1;
+    particle.x = startX + windStrength + (Math.random() - 0.5) * 0.8;
+    
+    // Fade out and grow
+    particle.alpha = (1 - progress) * (0.7 + Math.random() * 0.3);
+    particle.scale.set(startScale * (1 + progress * 0.8));
     
     requestAnimationFrame(updateParticle);
   }
