@@ -349,9 +349,9 @@ export const MATERIAL_BUTTONS = {
     backgroundHover: MATERIAL_COLORS.primary[600], // Consistent with filled
     backgroundPressed: MATERIAL_COLORS.primary[700],
     backgroundDisabled: 'transparent',
-    border: MATERIAL_COLORS.primary[400],          // Lighter border for visibility
-    borderHover: MATERIAL_COLORS.primary[500],
-    text: MATERIAL_COLORS.primary[400],            // Lighter text for visibility
+    border: MATERIAL_COLORS.primary[300],          // Even lighter border for better visibility
+    borderHover: MATERIAL_COLORS.primary[400],
+    text: MATERIAL_COLORS.primary[300],            // Much lighter text for better visibility
     textHover: MATERIAL_COLORS.neutral[0],
     textDisabled: MATERIAL_COLORS.neutral[400],
     borderRadius: 8,
@@ -365,7 +365,7 @@ export const MATERIAL_BUTTONS = {
     backgroundHover: MATERIAL_COLORS.primary[600], // Consistent with others
     backgroundPressed: MATERIAL_COLORS.primary[700],
     backgroundDisabled: 'transparent',
-    text: MATERIAL_COLORS.primary[400],            // Lighter text for visibility
+    text: MATERIAL_COLORS.primary[300],            // Much lighter text for better visibility
     textHover: MATERIAL_COLORS.neutral[0],
     textDisabled: MATERIAL_COLORS.neutral[400],
     borderRadius: 8,

@@ -44,62 +44,62 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
   const gapLarge = MATERIAL_SPACING[4]; // 16px
   const colWidth = 220; // Slightly wider for Material buttons
 
-  // Create Material Design buttons with appropriate variants
-  const rollBtn = createMaterialButton("Roll Dice", {
+  // Create Material Design buttons with appropriate variants and icons
+  const rollBtn = createMaterialButton("🎲 Roll Dice", {
     variant: 'filled',
     size: 'large',
     width: 180,
   });
 
-  const buildSettlementBtn = createMaterialButton("Build Settlement", {
+  const buildSettlementBtn = createMaterialButton("🏠 Settlement", {
     variant: 'filled',
     size: 'medium',
     width: 200,
   });
 
-  const buildRoadBtn = createMaterialButton("Build Road", {
+  const buildRoadBtn = createMaterialButton("🛤️ Road", {
     variant: 'filled',
     size: 'medium',
     width: 180,
   });
 
-  const buildCityBtn = createMaterialButton("Build City", {
+  const buildCityBtn = createMaterialButton("🏙️ City", {
     variant: 'filled',
     size: 'medium',
     width: 180,
   });
 
-  const tradeBtn = createMaterialButton("Trade", {
-    variant: 'outlined',
+  const tradeBtn = createMaterialButton("🔄 Trade", {
+    variant: 'filled',
     size: 'medium',
     width: 160,
   });
 
-  const buyDevBtn = createMaterialButton("Buy Dev Card", {
-    variant: 'outlined',
+  const buyDevBtn = createMaterialButton("🎯 Buy Dev", {
+    variant: 'filled',
     size: 'medium',
     width: 180,
   });
 
-  const playDevBtn = createMaterialButton("Play Dev", {
-    variant: 'outlined',
+  const playDevBtn = createMaterialButton("🎴 Play Dev", {
+    variant: 'filled',
     size: 'medium',
     width: 160,
   });
 
-  const endBtn = createMaterialButton("End Turn", {
-    variant: 'text',
+  const endBtn = createMaterialButton("✅ End Turn", {
+    variant: 'confirm',
     size: 'large',
     width: 180,
   });
 
-  const resetBtn = createMaterialButton("Reset Game", {
-    variant: 'text',
+  const resetBtn = createMaterialButton("⚠️ Reset", {
+    variant: 'destructive',
     size: 'small',
-    width: 160,
+    width: 110,
   });
 
-  // Store button references for easy access
+  // Store button references for easy access (excluding reset button)
   const colButtons = [
     rollBtn,
     buildSettlementBtn,
@@ -108,12 +108,14 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     tradeBtn,
     buyDevBtn,
     playDevBtn,
-    endBtn,
-    resetBtn
+    endBtn
   ];
 
-  // Add all button containers to HUD
+  // Add main column buttons to HUD
   colButtons.forEach(btn => hud.addChild(btn.container));
+  
+  // Add reset button separately (positioned in top-right)
+  hud.addChild(resetBtn.container);
 
   // Dice view (keep existing)
   const dice = makeDiceView();
@@ -141,9 +143,14 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     const responsiveGap = Math.max(8, gap * scaleFactor);
     const responsiveGapLarge = Math.max(12, gapLarge * scaleFactor);
     
-    // Position action buttons column on the right
+    // Position reset button in top-right corner (separate from main column)
+    resetBtn.container.x = screenWidth - responsivePad - 130; // 130px from right edge
+    resetBtn.container.y = responsivePad; // Top padding
+    resetBtn.container.zIndex = 1000; // Ensure it's on top
+    
+    // Position action buttons column on the right (leave space for reset button)
     const colX = screenWidth - responsivePad - responsiveColWidth;
-    let cy = responsivePad;
+    let cy = responsivePad + 60; // Start well below reset button
 
     // Position dice with responsive sizing
     const diceW = Math.max(120, 150 * scaleFactor);
