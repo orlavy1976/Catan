@@ -1,5 +1,5 @@
 import { PLAYER_COLORS } from "../../config/constants.js";
-import { createEnhancedSettlement, createEnhancedRoad } from "./enhancedGraphics.js";
+import { createEnhancedSettlement, createEnhancedRoad, createEnhancedCity } from "./enhancedGraphics.js";
 
 export function placeRoad(boardC, graph, eId, playerIdx, roadSprites) {
   const e = graph.edges[eId];
@@ -51,17 +51,22 @@ export function placeCity(boardC, graph, vId, playerIdx, townSprites) {
     existing.parent?.removeChild(existing);
     existing.destroy();
   }
+  
   const color = PLAYER_COLORS[playerIdx];
-  const g = new PIXI.Graphics();
-  g.beginFill(color);
-  // צורת עיר – קצת גבוהה/רחבה יותר, “בית עם מגדל”
-  g.drawPolygon(
-    -14,-10,  -4,-26,   6,-10,   6,6,   -14,6   // גוף
-  );
-  g.endFill();
-  g.lineStyle({ width: 2, color: 0x000000, alpha: 0.35 });
-  g.moveTo(-4,-26); g.lineTo(-4,-32); g.lineTo(2,-28); // “מגדלון” קטן
-  g.x = v.x; g.y = v.y;
-  boardC.addChild(g);
-  townSprites.set(vId, g);
+  
+  // Create enhanced city with multiple buildings and architectural details
+  const city = createEnhancedCity(color, {
+    scale: 1,
+    showDetails: true,
+    animate: true
+  });
+  
+  city.x = v.x;
+  city.y = v.y;
+  
+  // ודא שערים מופיעים מעל הדרכים
+  city.zIndex = 15; // ערים ברמה גבוהה יותר מיישובים
+  
+  boardC.addChild(city);
+  townSprites.set(vId, city);
 }

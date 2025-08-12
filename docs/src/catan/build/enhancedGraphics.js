@@ -6,6 +6,249 @@ import { MATERIAL_COLORS } from "../../config/materialDesign.js";
 import { animateScale, animateFade } from "../../utils/materialUI.js";
 
 /**
+ * Create an enhanced city with multiple buildings and architectural details
+ * @param {number} color - Player color
+ * @param {object} options - Rendering options
+ * @returns {PIXI.Container} City container with all graphical elements
+ */
+export function createEnhancedCity(color, options = {}) {
+  const {
+    scale = 1,
+    showDetails = true,
+    animate = true
+  } = options;
+
+  const container = new PIXI.Container();
+  container.sortableChildren = true;
+
+  // === CITY SHADOW (Material Design elevation) ===
+  const shadow = new PIXI.Graphics();
+  shadow.beginFill(0x000000, 0.18);
+  // Larger elliptical shadow for city
+  shadow.drawEllipse(0, 8, 22 * scale, 10 * scale);
+  shadow.endFill();
+  shadow.zIndex = 0;
+  container.addChild(shadow);
+
+  // === CITY FOUNDATION ===
+  const foundation = new PIXI.Graphics();
+  foundation.beginFill(MATERIAL_COLORS.neutral[600]);
+  foundation.drawRoundedRect(-18 * scale, 6 * scale, 36 * scale, 8 * scale, 2 * scale);
+  foundation.endFill();
+  foundation.zIndex = 1;
+  container.addChild(foundation);
+
+  // === MAIN BUILDING (CATHEDRAL/CASTLE) ===
+  const mainBuilding = new PIXI.Graphics();
+  
+  const wallColor = color;
+  const wallDarkColor = adjustBrightness(wallColor, -0.2);
+  
+  // Main cathedral body
+  mainBuilding.beginFill(wallColor);
+  mainBuilding.drawPolygon([
+    -14 * scale, -10 * scale,  // Bottom left
+    -14 * scale, 8 * scale,    // Top left
+    14 * scale, 8 * scale,     // Top right
+    14 * scale, -10 * scale    // Bottom right
+  ]);
+  mainBuilding.endFill();
+
+  // Side wall (isometric)
+  mainBuilding.beginFill(wallDarkColor);
+  mainBuilding.drawPolygon([
+    14 * scale, -10 * scale,   // Front bottom right
+    18 * scale, -14 * scale,   // Back bottom right
+    18 * scale, 4 * scale,     // Back top right
+    14 * scale, 8 * scale      // Front top right
+  ]);
+  mainBuilding.endFill();
+
+  mainBuilding.zIndex = 2;
+  container.addChild(mainBuilding);
+
+  // === MAIN TOWER ===
+  const tower = new PIXI.Graphics();
+  
+  // Tower body
+  tower.beginFill(wallColor);
+  tower.drawRect(-6 * scale, -26 * scale, 12 * scale, 16 * scale);
+  tower.endFill();
+  
+  // Tower side (isometric)
+  tower.beginFill(wallDarkColor);
+  tower.drawPolygon([
+    6 * scale, -26 * scale,    // Front top right
+    10 * scale, -30 * scale,   // Back top right
+    10 * scale, -14 * scale,   // Back bottom right
+    6 * scale, -10 * scale     // Front bottom right
+  ]);
+  tower.endFill();
+
+  tower.zIndex = 3;
+  container.addChild(tower);
+
+  // === TOWER ROOF ===
+  const towerRoof = new PIXI.Graphics();
+  const roofColor = MATERIAL_COLORS.neutral[700];
+  
+  // Pointed roof
+  towerRoof.beginFill(roofColor);
+  towerRoof.drawPolygon([
+    0 * scale, -34 * scale,    // Peak
+    -8 * scale, -26 * scale,   // Left
+    8 * scale, -26 * scale     // Right
+  ]);
+  towerRoof.endFill();
+  
+  // Roof side
+  towerRoof.beginFill(adjustBrightness(roofColor, 0.1));
+  towerRoof.drawPolygon([
+    0 * scale, -34 * scale,    // Peak
+    8 * scale, -26 * scale,    // Front right
+    12 * scale, -30 * scale,   // Back right
+    4 * scale, -38 * scale     // Back peak
+  ]);
+  towerRoof.endFill();
+
+  towerRoof.zIndex = 4;
+  container.addChild(towerRoof);
+
+  // === SIDE BUILDINGS ===
+  // Left building
+  const leftBuilding = new PIXI.Graphics();
+  leftBuilding.beginFill(adjustBrightness(wallColor, -0.1));
+  leftBuilding.drawRect(-16 * scale, -6 * scale, 8 * scale, 14 * scale);
+  leftBuilding.endFill();
+  leftBuilding.zIndex = 2;
+  container.addChild(leftBuilding);
+
+  // Right building
+  const rightBuilding = new PIXI.Graphics();
+  rightBuilding.beginFill(adjustBrightness(wallColor, 0.1));
+  rightBuilding.drawRect(8 * scale, -8 * scale, 10 * scale, 16 * scale);
+  rightBuilding.endFill();
+  rightBuilding.zIndex = 2;
+  container.addChild(rightBuilding);
+
+  if (showDetails) {
+    // === ARCHITECTURAL DETAILS ===
+    
+    // Main entrance (large door)
+    const door = new PIXI.Graphics();
+    door.beginFill(MATERIAL_COLORS.neutral[800]);
+    door.drawRoundedRect(-4 * scale, -2 * scale, 8 * scale, 10 * scale, 2 * scale);
+    door.endFill();
+    
+    // Door arch
+    door.beginFill(MATERIAL_COLORS.neutral[700]);
+    door.drawPolygon([
+      -4 * scale, -2 * scale,   // Left bottom
+      0 * scale, -6 * scale,    // Peak
+      4 * scale, -2 * scale     // Right bottom
+    ]);
+    door.endFill();
+    
+    door.zIndex = 5;
+    container.addChild(door);
+
+    // Windows on main building
+    const windowColor = MATERIAL_COLORS.tertiary[200];
+    
+    // Left window
+    const leftWindow = new PIXI.Graphics();
+    leftWindow.beginFill(windowColor);
+    leftWindow.drawRoundedRect(-10 * scale, -4 * scale, 3 * scale, 6 * scale, 0.5 * scale);
+    leftWindow.endFill();
+    // Window cross
+    leftWindow.lineStyle(0.6 * scale, MATERIAL_COLORS.neutral[700]);
+    leftWindow.moveTo(-8.5 * scale, -4 * scale);
+    leftWindow.lineTo(-8.5 * scale, 2 * scale);
+    leftWindow.moveTo(-10 * scale, -1 * scale);
+    leftWindow.lineTo(-7 * scale, -1 * scale);
+    leftWindow.zIndex = 5;
+    container.addChild(leftWindow);
+
+    // Right window
+    const rightWindow = new PIXI.Graphics();
+    rightWindow.beginFill(windowColor);
+    rightWindow.drawRoundedRect(7 * scale, -4 * scale, 3 * scale, 6 * scale, 0.5 * scale);
+    rightWindow.endFill();
+    // Window cross
+    rightWindow.lineStyle(0.6 * scale, MATERIAL_COLORS.neutral[700]);
+    rightWindow.moveTo(8.5 * scale, -4 * scale);
+    rightWindow.lineTo(8.5 * scale, 2 * scale);
+    rightWindow.moveTo(7 * scale, -1 * scale);
+    rightWindow.lineTo(10 * scale, -1 * scale);
+    rightWindow.zIndex = 5;
+    container.addChild(rightWindow);
+
+    // Tower windows
+    const towerWindow = new PIXI.Graphics();
+    towerWindow.beginFill(windowColor);
+    towerWindow.drawRoundedRect(-2 * scale, -20 * scale, 4 * scale, 3 * scale, 0.5 * scale);
+    towerWindow.endFill();
+    towerWindow.zIndex = 5;
+    container.addChild(towerWindow);
+
+    // Flag on tower
+    const flagPole = new PIXI.Graphics();
+    flagPole.lineStyle(1 * scale, MATERIAL_COLORS.neutral[800]);
+    flagPole.moveTo(0, -34 * scale);
+    flagPole.lineTo(0, -42 * scale);
+    flagPole.zIndex = 6;
+    container.addChild(flagPole);
+
+    const flag = new PIXI.Graphics();
+    flag.beginFill(adjustBrightness(color, 0.3));
+    flag.drawPolygon([
+      0, -42 * scale,
+      8 * scale, -40 * scale,
+      8 * scale, -36 * scale,
+      0, -38 * scale
+    ]);
+    flag.endFill();
+    flag.zIndex = 6;
+    container.addChild(flag);
+
+    // Smoke from multiple chimneys
+    if (animate) {
+      // Main chimney
+      createSmokeParticles(container, 8 * scale, -26 * scale, scale);
+      // Side chimney
+      setTimeout(() => {
+        createSmokeParticles(container, -12 * scale, -6 * scale, scale * 0.8);
+      }, 400);
+    }
+  }
+
+  // === CITY OUTLINE ===
+  const outline = new PIXI.Graphics();
+  outline.lineStyle(2 * scale, 0x000000, 0.3);
+  // Main building outline
+  outline.drawPolygon([
+    -14 * scale, -10 * scale,
+    -14 * scale, 8 * scale,
+    14 * scale, 8 * scale,
+    14 * scale, -10 * scale
+  ]);
+  // Tower outline
+  outline.drawRect(-6 * scale, -26 * scale, 12 * scale, 16 * scale);
+  outline.zIndex = 7;
+  container.addChild(outline);
+
+  // Add entrance animation
+  if (animate) {
+    container.alpha = 0;
+    container.scale.set(0.1);
+    animateScale(container, scale, 600);
+    animateFade(container, 1, 600);
+  }
+
+  return container;
+}
+
+/**
  * Create an enhanced road with improved visual style
  * @param {object} start - Start vertex {x, y}
  * @param {object} end - End vertex {x, y}

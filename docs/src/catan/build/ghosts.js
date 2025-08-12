@@ -1,4 +1,4 @@
-import { createEnhancedSettlement, createEnhancedRoad } from "./enhancedGraphics.js";
+import { createEnhancedSettlement, createEnhancedRoad, createEnhancedCity } from "./enhancedGraphics.js";
 
 export function drawSettlementGhost(layers, graph, vId, color, alpha=0.35) {
   const v = graph.vertices[vId];
@@ -39,12 +39,18 @@ export function drawRoadGhost(layers, graph, eId, color, alpha=0.35) {
 // 🆕
 export function drawCityGhost(layers, graph, vId, color, alpha=0.35) {
   const v = graph.vertices[vId];
-  const g = new PIXI.Graphics();
-  g.beginFill(color, alpha);
-  g.drawPolygon(-14,-10, -4,-26, 6,-10, 6,6, -14,6);
-  g.endFill();
-  g.lineStyle({ width: 2, color: 0x000000, alpha: 0.2 });
-  g.drawPolygon(-14,-10, -4,-26, 6,-10, 6,6, -14,6);
-  g.x = v.x; g.y = v.y;
-  layers.ghosts.addChild(g);
+  
+  // Create enhanced city ghost with reduced details and transparency
+  const ghost = createEnhancedCity(color, {
+    scale: 1,
+    showDetails: false, // Simplified for ghost preview
+    animate: false      // No animation for ghost
+  });
+  
+  // Apply ghost transparency
+  ghost.alpha = alpha;
+  ghost.x = v.x;
+  ghost.y = v.y;
+  
+  layers.ghosts.addChild(ghost);
 }
