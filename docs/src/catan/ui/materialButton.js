@@ -24,7 +24,7 @@ import { animateScale, animateButtonPress } from "../../utils/materialUI.js";
  */
 export function createMaterialButton(label, options = {}) {
   const {
-    variant = 'filled',        // filled, outlined, text, floating
+    variant = 'filled',        // filled, outlined, text, floating, destructive, confirm
     size = 'medium',           // small, medium, large
     width = 'auto',            // auto, number, or 'full'
     icon = null,              // Icon sprite/texture
@@ -117,7 +117,7 @@ export function createMaterialButton(label, options = {}) {
   function drawShadow() {
     shadow.clear();
     
-    if (variant === 'filled' || variant === 'floating') {
+    if (variant === 'filled' || variant === 'floating' || variant === 'destructive' || variant === 'confirm') {
       const elevation = currentState === 'hover' ? 
         buttonConfig.elevationHover : 
         buttonConfig.elevation;
@@ -159,8 +159,8 @@ export function createMaterialButton(label, options = {}) {
       bgColor = buttonConfig.backgroundDisabled;
     }
     
-    // Draw background for filled buttons
-    if (variant === 'filled' || variant === 'floating') {
+    // Draw background for filled buttons (including new variants)
+    if (variant === 'filled' || variant === 'floating' || variant === 'destructive' || variant === 'confirm') {
       if (bgColor !== 'transparent') {
         background.beginFill(bgColor, 1);
         background.drawRoundedRect(0, 0, finalWidth, height, buttonConfig.borderRadius);

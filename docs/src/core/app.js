@@ -8,7 +8,7 @@ export function initApp() {
   app = new PIXI.Application({
     resizeTo: window,
     antialias: true,
-    background: 0x5aa0c8, // sea-ish placeholder (we'll swap for textured water later)
+    background: 0x1e293b, // Enhanced darker background that complements dialog colors
   });
 
   viewParent.appendChild(app.view);
