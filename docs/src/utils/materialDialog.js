@@ -100,24 +100,22 @@ export function createMaterialDialog(app, options = {}) {
   });
   dialog.addChild(background);
 
-  // Content container with proper padding
-  const contentContainer = createMaterialContainer({
-    padding: MATERIAL_SPACING[6],
-    gap: MATERIAL_SPACING[4],
-    direction: 'vertical'
-  });
-  dialog.addChild(contentContainer);
-
-  // Title
+  // Title area - positioned at the top with explicit positioning
   let titleText = null;
+  let titleHeight = 0;
   if (title) {
     titleText = createMaterialText(title, 'sectionHeader');
-    contentContainer.materialLayout.addChild(titleText);
+    titleText.x = MATERIAL_SPACING[6];
+    titleText.y = MATERIAL_SPACING[6];
+    dialog.addChild(titleText);
+    titleHeight = titleText.height + MATERIAL_SPACING[4]; // Title height + spacing
   }
 
-  // Content area
+  // Content area - positioned below title with proper spacing
   const contentArea = new PIXI.Container();
-  contentContainer.materialLayout.addChild(contentArea);
+  contentArea.x = MATERIAL_SPACING[6];
+  contentArea.y = MATERIAL_SPACING[6] + titleHeight; // Start below title
+  dialog.addChild(contentArea);
 
   // Button area - use simple container instead of material container
   const buttonContainer = new PIXI.Container();
@@ -131,19 +129,29 @@ export function createMaterialDialog(app, options = {}) {
 
   // Layout function to adjust dialog size based on content
   function updateLayout() {
-    // Calculate content height
+    // Recalculate title height in case it changed
     const titleHeight = titleText ? titleText.height + MATERIAL_SPACING[4] : 0;
-    const contentHeight = contentArea.height || 0;
+    
+    // Calculate total content height including all children
+    let contentHeight = 0;
+    if (contentArea.children.length > 0) {
+      const lastChild = contentArea.children[contentArea.children.length - 1];
+      contentHeight = lastChild.y + lastChild.height;
+    }
+    
     const buttonHeight = 48; // Standard button height
     const padding = MATERIAL_SPACING[6] * 2; // Top and bottom padding
-    const spacing = MATERIAL_SPACING[4]; // Spacing between title and content
     const buttonSpacing = MATERIAL_SPACING[4]; // Spacing before buttons
     
-    // Calculate required height
-    const requiredHeight = padding + titleHeight + spacing + contentHeight + buttonSpacing + buttonHeight;
+    // Calculate required height (add spacing between content and buttons)
+    const contentToButtonSpacing = contentHeight > 0 ? MATERIAL_SPACING[4] : 0;
+    const requiredHeight = padding + titleHeight + contentHeight + contentToButtonSpacing + buttonSpacing + buttonHeight;
     
     // Use the larger of the minimum height or required height
     currentHeight = Math.max(height, requiredHeight);
+    
+    // Update content area position (ensure it's always below title)
+    contentArea.y = MATERIAL_SPACING[6] + titleHeight;
     
     // Update dialog background with enhanced styling
     background.clear();
@@ -263,6 +271,8 @@ export function createMaterialDialog(app, options = {}) {
     setTitle(newTitle) {
       if (titleText) {
         titleText.text = newTitle;
+        // Update layout after title change to reposition content
+        updateLayout();
       }
     },
 
@@ -305,8 +315,20 @@ export function createMaterialDialog(app, options = {}) {
     addContent(element) {
       contentArea.addChild(element);
       
+      // Properly stack content vertically with spacing
+      let currentY = 0;
+      contentArea.children.forEach((child, index) => {
+        child.y = currentY;
+        currentY += child.height + (index < contentArea.children.length - 1 ? MATERIAL_SPACING[4] : 0);
+      });
+      
       // Update layout after adding content
       updateLayout();
+    },
+
+    // Get maximum content width for text wrapping
+    getMaxContentWidth() {
+      return width - (MATERIAL_SPACING[6] * 2); // Account for padding
     },
 
     // State
@@ -337,7 +359,7 @@ export function createMaterialAlert(app, options = {}) {
   if (message) {
     const messageText = createMaterialText(message, 'bodyLarge', {
       wordWrap: true,
-      wordWrapWidth: 330, // Leave room for dialog padding (400 - 70px total padding)
+      wordWrapWidth: dialog.getMaxContentWidth(), // Use dynamic width
       align: 'left'
     });
     dialog.addContent(messageText);
@@ -375,7 +397,7 @@ export function createMaterialConfirm(app, options = {}) {
   if (message) {
     const messageText = createMaterialText(message, 'bodyLarge', {
       wordWrap: true,
-      wordWrapWidth: 380, // Leave room for dialog padding (450 - 70px total padding)
+      wordWrapWidth: dialog.getMaxContentWidth(), // Use dynamic width
       align: 'left'
     });
     dialog.addContent(messageText);
@@ -418,22 +440,18 @@ export function createMaterialChoice(app, options = {}) {
   if (message) {
     const messageText = createMaterialText(message, 'bodyLarge', {
       wordWrap: true,
-      wordWrapWidth: 430, // Leave room for dialog padding (500 - 70px total padding)
+      wordWrapWidth: dialog.getMaxContentWidth(), // Use dynamic width
       align: 'left'
     });
     dialog.addContent(messageText);
   }
 
-  // Add choice buttons in content area with manual positioning
-  const choiceContainer = new PIXI.Container();
-  dialog.addContent(choiceContainer);
-
-  let currentY = 0;
+  // Add choice buttons as separate content with proper spacing
   choices.forEach((choice, index) => {
     const choiceButton = createMaterialButton(choice.label || choice, {
       variant: index === 0 ? 'filled' : 'outlined',
       size: 'medium',
-      width: 400,
+      width: dialog.getMaxContentWidth() - MATERIAL_SPACING[2], // Fit within dialog bounds with small margin
     });
 
     choiceButton.onClick(() => {
@@ -442,12 +460,8 @@ export function createMaterialChoice(app, options = {}) {
       dialog.close();
     });
 
-    // Manual positioning
-    choiceButton.container.x = 50; // Center in dialog
-    choiceButton.container.y = currentY;
-    choiceContainer.addChild(choiceButton.container);
-    
-    currentY += 60; // Button height + spacing
+    // Add each button as separate content - this will handle spacing automatically
+    dialog.addContent(choiceButton.container);
   });
 
   // Add cancel button if provided with better styling
@@ -457,113 +471,6 @@ export function createMaterialChoice(app, options = {}) {
       onClick: onCancel,
     });
   }
-
-  return dialog;
-}
-
-/**
- * Create a Material Design destructive dialog (for delete confirmations)
- */
-export function createMaterialDestructiveDialog(app, options = {}) {
-  const {
-    title = 'Delete',
-    message = 'Are you sure you want to delete this? This action cannot be undone.',
-    confirmText = 'Delete',
-    cancelText = 'Cancel',
-    onConfirm = null,
-    onCancel = null,
-  } = options;
-
-  const dialog = createMaterialDialog(app, {
-    type: MATERIAL_DIALOG_TYPES.CONFIRM,
-    title,
-    ...options
-  });
-
-  // Add message content with word wrapping for long messages
-  if (message) {
-    const messageText = createMaterialText(message, 'bodyLarge', {
-      wordWrap: true,
-      wordWrapWidth: 380, // Leave room for dialog padding
-      align: 'left'
-    });
-    dialog.addContent(messageText);
-  }
-
-  // Add buttons with destructive styling
-  dialog.addButton(cancelText, {
-    variant: 'outlined',
-    onClick: onCancel,
-  });
-
-  dialog.addButton(confirmText, {
-    variant: 'destructive', // Use new destructive style
-    onClick: onConfirm,
-  });
-
-  return dialog;
-}
-
-/**
- * Create a Material Design form dialog
- */
-export function createMaterialForm(app, options = {}) {
-  const {
-    title = 'Form',
-    fields = [],
-    onSubmit = null,
-    onCancel = null,
-    submitText = 'Submit',
-    cancelText = 'Cancel',
-  } = options;
-
-  const dialog = createMaterialDialog(app, {
-    type: MATERIAL_DIALOG_TYPES.FORM,
-    title,
-    ...options
-  });
-
-  // Form container
-  const formContainer = createMaterialContainer({
-    padding: 0,
-    gap: MATERIAL_SPACING[4],
-    direction: 'vertical'
-  });
-  dialog.addContent(formContainer);
-
-  // Field data storage
-  const formData = {};
-
-  // Add fields (simplified for now - can be expanded)
-  fields.forEach(field => {
-    const fieldContainer = createMaterialContainer({
-      padding: 0,
-      gap: MATERIAL_SPACING[2],
-      direction: 'vertical'
-    });
-
-    // Label
-    const label = createMaterialText(field.label, 'label');
-    fieldContainer.materialLayout.addChild(label);
-
-    // Store initial value
-    formData[field.name] = field.value || '';
-
-    formContainer.materialLayout.addChild(fieldContainer);
-  });
-
-  // Add form buttons with improved styling
-  if (onCancel) {
-    dialog.addButton(cancelText, {
-      variant: 'outlined',
-      onClick: onCancel,
-    });
-  }
-
-  dialog.addButton(submitText, {
-    variant: 'confirm', // Use new confirm style for positive actions
-    onClick: () => onSubmit?.(formData),
-  });
 
   return dialog;
 }
