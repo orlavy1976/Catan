@@ -8,6 +8,7 @@ import { createMaterialNotificationSystem } from "./materialNotifications.js";
 import { 
   createMaterialText, 
   createMaterialContainer,
+  drawMaterialCard,
   animateScale 
 } from "../../utils/materialUI.js";
 import { 
@@ -15,6 +16,37 @@ import {
   MATERIAL_SPACING,
   MATERIAL_MOTION 
 } from "../../config/materialDesign.js";
+
+/**
+ * Create a bordered section for button groups
+ * @param {string} title - Section title
+ * @param {number} width - Section width
+ * @returns {PIXI.Container} Section container
+ */
+function createButtonSection(title, width) {
+  const section = new PIXI.Container();
+  
+  // Create background with border
+  const background = new PIXI.Graphics();
+  section.addChild(background);
+  
+  // Section title
+  const titleText = createMaterialText(title, 'label', {
+    fill: MATERIAL_COLORS.neutral[300],
+    fontSize: 12
+  });
+  titleText.x = MATERIAL_SPACING[3];
+  titleText.y = MATERIAL_SPACING[2];
+  section.addChild(titleText);
+  
+  // Store section properties for layout
+  section.sectionWidth = width;
+  section.sectionTitle = titleText;
+  section.sectionBackground = background;
+  section.sectionButtons = []; // Use different name to avoid conflicts
+  
+  return section;
+}
 
 /**
  * Create a Material Design HUD
@@ -99,20 +131,47 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     width: 110,
   });
 
-  // Store button references for easy access (excluding reset button)
-  const colButtons = [
-    rollBtn,
+  // Store button references organized by groups
+  const rollDiceGroup = [rollBtn];
+  
+  const buildGroup = [
     buildSettlementBtn,
     buildRoadBtn,
-    buildCityBtn,
+    buildCityBtn
+  ];
+  
+  const gameActionsGroup = [
     tradeBtn,
     buyDevBtn,
     playDevBtn,
     endBtn
   ];
 
-  // Add main column buttons to HUD
-  colButtons.forEach(btn => hud.addChild(btn.container));
+  // Create bordered sections for button groups
+  const rollSection = createButtonSection("🎲 Roll Dice", 220);
+  const buildSection = createButtonSection("🏗️ Build Actions", 220);
+  const actionsSection = createButtonSection("⚡ Game Actions", 220);
+
+  // Add sections to HUD
+  hud.addChild(rollSection);
+  hud.addChild(buildSection);
+  hud.addChild(actionsSection);
+
+  // Add buttons to their respective sections and track them
+  rollDiceGroup.forEach(btn => {
+    rollSection.addChild(btn.container);
+    rollSection.sectionButtons.push(btn.container);
+  });
+  
+  buildGroup.forEach(btn => {
+    buildSection.addChild(btn.container);
+    buildSection.sectionButtons.push(btn.container);
+  });
+  
+  gameActionsGroup.forEach(btn => {
+    actionsSection.addChild(btn.container);
+    actionsSection.sectionButtons.push(btn.container);
+  });
   
   // Add reset button separately (positioned in top-right)
   hud.addChild(resetBtn.container);
@@ -148,28 +207,29 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     resetBtn.container.y = responsivePad; // Top padding
     resetBtn.container.zIndex = 1000; // Ensure it's on top
     
-    // Position action buttons column on the right (leave space for reset button)
+    // Position action sections column on the right (leave space for reset button)
     const colX = screenWidth - responsivePad - responsiveColWidth;
-    let cy = responsivePad + 60; // Start well below reset button
+    let cy = responsivePad; // Start well below reset button
 
-    // Position dice with responsive sizing
-    const diceW = Math.max(120, 150 * scaleFactor);
+    // Position dice with responsive sizing (in roll section area)
+    const diceW = Math.max(120, 100 * scaleFactor);
     dice.container.x = colX + Math.round((responsiveColWidth - diceW) / 2);
     dice.container.y = cy;
-    cy += Math.max(100, 120 * scaleFactor) + responsiveGapLarge;
+    cy += Math.max(40, 40 * scaleFactor) + responsiveGapLarge;
 
-    // Position buttons with responsive Material spacing
-    colButtons.forEach((btn, index) => {
-      const buttonWidth = Math.max(160, btn.width * scaleFactor);
-      const x = colX + Math.round((responsiveColWidth - buttonWidth) / 2);
-      btn.container.x = x;
-      btn.container.y = cy;
+    // Layout sections with proper spacing
+    const sections = [rollSection, buildSection, actionsSection];
+    
+    sections.forEach((section, sectionIndex) => {
+      // Position section
+      section.x = colX;
+      section.y = cy;
       
-      // Scale button size if needed
-      const buttonScale = Math.max(0.8, scaleFactor);
-      btn.container.scale.set(buttonScale);
+      // Layout buttons within section
+      layoutSection(section, scaleFactor, responsiveGap);
       
-      cy += Math.max(40, btn.height * buttonScale) + responsiveGap;
+      // Move to next section position
+      cy += section.sectionHeight + responsiveGapLarge;
     });
 
     // Position banner text responsively
@@ -180,27 +240,47 @@ export function createMaterialHUD(app, root, onRoll, onEndTurn, onBuildRoad, onB
     const textScale = Math.max(0.8, scaleFactor);
     bannerText.scale.set(textScale);
     
-    // Ensure buttons don't go off-screen on short screens
-    if (cy > screenHeight - 50) {
-      const overflow = cy - (screenHeight - 50);
-      const buttonCount = colButtons.length;
-      const spacingReduction = Math.min(responsiveGap * 0.5, overflow / buttonCount);
-      
-      // Re-layout with reduced spacing
-      cy = responsivePad + Math.max(100, 120 * scaleFactor) + responsiveGapLarge;
-      colButtons.forEach((btn, index) => {
-        const buttonWidth = Math.max(160, btn.width * scaleFactor);
-        const x = colX + Math.round((responsiveColWidth - buttonWidth) / 2);
-        btn.container.x = x;
-        btn.container.y = cy;
-        cy += Math.max(40, btn.height * Math.max(0.8, scaleFactor)) + (responsiveGap - spacingReduction);
-      });
-    }
-    
     // Layout notification system
     notifications.layout();
     
     console.log("🎨 HUD layout - Screen:", `${screenWidth}x${screenHeight}`, "Scale:", scaleFactor.toFixed(2), "ColX:", colX);
+  }
+
+  // Helper function to layout a section
+  function layoutSection(section, scaleFactor, gap) {
+    const sectionPadding = MATERIAL_SPACING[3];
+    const titleHeight = 20;
+    let contentHeight = titleHeight + sectionPadding;
+    
+    // Position buttons within section
+    section.sectionButtons.forEach((btnContainer, index) => {
+      const buttonY = titleHeight + sectionPadding + (index * (48 + gap));
+      btnContainer.x = sectionPadding;
+      btnContainer.y = buttonY;
+      
+      // Scale button if needed
+      const buttonScale = Math.max(0.8, scaleFactor);
+      btnContainer.scale.set(buttonScale);
+      
+      contentHeight = buttonY + (48 * buttonScale) + sectionPadding;
+    });
+    
+    // Update section background
+    const bg = section.sectionBackground;
+    bg.clear();
+    drawMaterialCard(bg, section.sectionWidth, contentHeight, {
+      elevation: 1,
+      backgroundColor: MATERIAL_COLORS.surface.tertiary,
+      borderRadius: 8,
+      border: {
+        width: 1,
+        color: MATERIAL_COLORS.neutral[500],
+        alpha: 0.3
+      }
+    });
+    
+    // Store section height for next section positioning
+    section.sectionHeight = contentHeight;
   }
 
   // Initial layout
