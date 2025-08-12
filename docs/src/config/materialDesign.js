@@ -72,13 +72,15 @@ export const MATERIAL_COLORS = {
     info: 0x3b82f6,
   },
 
-  // Surface colors (for backgrounds)
+  // Surface colors (for backgrounds) - Enhanced for better dialog appearance
   surface: {
     primary: 0x0f172a,      // Main dark surface
-    secondary: 0x1e293b,    // Lighter dark surface
-    tertiary: 0x334155,     // Cards, modals
-    accent: 0x475569,       // Elevated surfaces
-    overlay: 0x000000,      // Modal overlays
+    secondary: 0x2a3441,    // Enhanced lighter surface with warmth
+    tertiary: 0x3f4853,     // Cards, modals - lighter for better contrast
+    accent: 0x5a6570,       // Elevated surfaces - more contrast
+    overlay: 0x1a202c,      // Modal overlays - warmer dark for better overlay
+    dialog: 0x3a4553,       // Special dialog background - optimal contrast
+    dialogHeader: 0x454f5e, // Dialog header area - subtle elevation
   },
 
   // Player colors (enhanced with better contrast)
@@ -327,32 +329,32 @@ export const MATERIAL_SHADOWS = {
 // ==================== MATERIAL COMPONENTS ====================
 
 export const MATERIAL_BUTTONS = {
-  // Button variants
+  // Button variants - Enhanced colors for better dialog appearance
   filled: {
-    background: MATERIAL_COLORS.primary[500],
-    backgroundHover: MATERIAL_COLORS.primary[600],
+    background: MATERIAL_COLORS.primary[600],      // Slightly darker primary for better contrast
+    backgroundHover: MATERIAL_COLORS.primary[500], // Lighter on hover
     backgroundPressed: MATERIAL_COLORS.primary[700],
-    backgroundDisabled: MATERIAL_COLORS.neutral[700],
+    backgroundDisabled: MATERIAL_COLORS.neutral[600], // Lighter disabled state
     text: MATERIAL_COLORS.neutral[0],
-    textDisabled: MATERIAL_COLORS.neutral[500],
+    textDisabled: MATERIAL_COLORS.neutral[400],    // Better contrast for disabled text
     elevation: MATERIAL_SHADOWS.elevation1,
     elevationHover: MATERIAL_SHADOWS.elevation2,
-    borderRadius: 20,
+    borderRadius: 8,                               // Slightly less rounded for modern look
     paddingX: 24,
     paddingY: 10,
   },
   
   outlined: {
     background: 'transparent',
-    backgroundHover: MATERIAL_COLORS.primary[500],
-    backgroundPressed: MATERIAL_COLORS.primary[600],
+    backgroundHover: MATERIAL_COLORS.primary[600], // Consistent with filled
+    backgroundPressed: MATERIAL_COLORS.primary[700],
     backgroundDisabled: 'transparent',
-    border: MATERIAL_COLORS.primary[500],
-    borderHover: MATERIAL_COLORS.primary[600],
-    text: MATERIAL_COLORS.primary[500],
+    border: MATERIAL_COLORS.primary[400],          // Lighter border for visibility
+    borderHover: MATERIAL_COLORS.primary[500],
+    text: MATERIAL_COLORS.primary[400],            // Lighter text for visibility
     textHover: MATERIAL_COLORS.neutral[0],
-    textDisabled: MATERIAL_COLORS.neutral[500],
-    borderRadius: 20,
+    textDisabled: MATERIAL_COLORS.neutral[400],
+    borderRadius: 8,
     borderWidth: 2,
     paddingX: 24,
     paddingY: 10,
@@ -360,24 +362,53 @@ export const MATERIAL_BUTTONS = {
   
   text: {
     background: 'transparent',
-    backgroundHover: MATERIAL_COLORS.primary[500],
-    backgroundPressed: MATERIAL_COLORS.primary[600],
+    backgroundHover: MATERIAL_COLORS.primary[600], // Consistent with others
+    backgroundPressed: MATERIAL_COLORS.primary[700],
     backgroundDisabled: 'transparent',
-    text: MATERIAL_COLORS.primary[500],
+    text: MATERIAL_COLORS.primary[400],            // Lighter text for visibility
     textHover: MATERIAL_COLORS.neutral[0],
-    textDisabled: MATERIAL_COLORS.neutral[500],
-    borderRadius: 20,
+    textDisabled: MATERIAL_COLORS.neutral[400],
+    borderRadius: 8,
     paddingX: 16,
     paddingY: 10,
   },
   
-  floating: {
-    background: MATERIAL_COLORS.primary[500],
-    backgroundHover: MATERIAL_COLORS.primary[600],
-    backgroundPressed: MATERIAL_COLORS.primary[700],
-    backgroundDisabled: MATERIAL_COLORS.neutral[700],
+  // Special button variants for dialogs
+  destructive: {
+    background: MATERIAL_COLORS.semantic.error,
+    backgroundHover: 0xdc2626,                     // Slightly darker red
+    backgroundPressed: 0xb91c1c,                   // Even darker when pressed
+    backgroundDisabled: MATERIAL_COLORS.neutral[600],
     text: MATERIAL_COLORS.neutral[0],
-    textDisabled: MATERIAL_COLORS.neutral[500],
+    textDisabled: MATERIAL_COLORS.neutral[400],
+    elevation: MATERIAL_SHADOWS.elevation1,
+    elevationHover: MATERIAL_SHADOWS.elevation2,
+    borderRadius: 8,
+    paddingX: 24,
+    paddingY: 10,
+  },
+  
+  confirm: {
+    background: MATERIAL_COLORS.semantic.success,
+    backgroundHover: 0x059669,                     // Slightly darker green
+    backgroundPressed: 0x047857,                   // Even darker when pressed
+    backgroundDisabled: MATERIAL_COLORS.neutral[600],
+    text: MATERIAL_COLORS.neutral[0],
+    textDisabled: MATERIAL_COLORS.neutral[400],
+    elevation: MATERIAL_SHADOWS.elevation1,
+    elevationHover: MATERIAL_SHADOWS.elevation2,
+    borderRadius: 8,
+    paddingX: 24,
+    paddingY: 10,
+  },
+  
+  floating: {
+    background: MATERIAL_COLORS.primary[600],      // Consistent with filled
+    backgroundHover: MATERIAL_COLORS.primary[500],
+    backgroundPressed: MATERIAL_COLORS.primary[700],
+    backgroundDisabled: MATERIAL_COLORS.neutral[600],
+    text: MATERIAL_COLORS.neutral[0],
+    textDisabled: MATERIAL_COLORS.neutral[400],
     elevation: MATERIAL_SHADOWS.elevation3,
     elevationHover: MATERIAL_SHADOWS.elevation4,
     borderRadius: 28,

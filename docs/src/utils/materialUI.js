@@ -26,6 +26,7 @@ export function drawMaterialCard(graphics, width, height, options = {}) {
     borderRadius = 12,
     borderColor = null,
     borderWidth = 0,
+    border = null, // New border object format
   } = options;
 
   graphics.clear();
@@ -51,12 +52,22 @@ export function drawMaterialCard(graphics, width, height, options = {}) {
   graphics.drawRoundedRect(0, 0, width, height, borderRadius);
   graphics.endFill();
   
-  // Draw border if specified
-  if (borderColor && borderWidth > 0) {
+  // Draw border - handle both old and new format
+  let finalBorderColor = borderColor;
+  let finalBorderWidth = borderWidth;
+  let borderAlpha = 1;
+  
+  if (border) {
+    finalBorderColor = border.color;
+    finalBorderWidth = border.width || 1;
+    borderAlpha = border.alpha || 1;
+  }
+  
+  if (finalBorderColor && finalBorderWidth > 0) {
     graphics.lineStyle({
-      width: borderWidth,
-      color: borderColor,
-      alpha: 1,
+      width: finalBorderWidth,
+      color: finalBorderColor,
+      alpha: borderAlpha,
     });
     graphics.drawRoundedRect(0, 0, width, height, borderRadius);
   }

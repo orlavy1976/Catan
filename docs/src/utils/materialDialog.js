@@ -72,9 +72,9 @@ export function createMaterialDialog(app, options = {}) {
   const container = new PIXI.Container();
   container.zIndex = 10000;
   
-  // Modal overlay
+  // Modal overlay - improved with warmer, less harsh overlay
   const overlay = new PIXI.Graphics();
-  overlay.beginFill(MATERIAL_COLORS.neutral[950], 0.5);
+  overlay.beginFill(MATERIAL_COLORS.surface.overlay, 0.75); // Increased opacity for better contrast
   overlay.drawRect(0, 0, app.screen.width, app.screen.height);
   overlay.endFill();
   overlay.eventMode = 'static';
@@ -86,12 +86,17 @@ export function createMaterialDialog(app, options = {}) {
   dialog.y = (app.screen.height - height) / 2;
   container.addChild(dialog);
 
-  // Background card
+  // Background card - enhanced with better colors and subtle gradient
   const background = new PIXI.Graphics();
   drawMaterialCard(background, width, height, {
     elevation,
-    backgroundColor: MATERIAL_COLORS.surface.secondary,
-    borderRadius: 16,
+    backgroundColor: MATERIAL_COLORS.surface.dialog, // New dedicated dialog color
+    borderRadius: 12, // Slightly less rounded for modern look
+    border: {
+      width: 1,
+      color: MATERIAL_COLORS.neutral[600], // Subtle border for definition
+      alpha: 0.3
+    }
   });
   dialog.addChild(background);
 
@@ -140,12 +145,17 @@ export function createMaterialDialog(app, options = {}) {
     // Use the larger of the minimum height or required height
     currentHeight = Math.max(height, requiredHeight);
     
-    // Update dialog background
+    // Update dialog background with enhanced styling
     background.clear();
     drawMaterialCard(background, width, currentHeight, {
       elevation,
-      backgroundColor: MATERIAL_COLORS.surface.secondary,
-      borderRadius: 16,
+      backgroundColor: MATERIAL_COLORS.surface.dialog,
+      borderRadius: 12,
+      border: {
+        width: 1,
+        color: MATERIAL_COLORS.neutral[600],
+        alpha: 0.3
+      }
     });
     
     // Reposition dialog to stay centered
@@ -371,14 +381,14 @@ export function createMaterialConfirm(app, options = {}) {
     dialog.addContent(messageText);
   }
 
-  // Add buttons
+  // Add buttons with improved styling
   dialog.addButton(cancelText, {
-    variant: 'text',
+    variant: 'outlined', // Better visual hierarchy
     onClick: onCancel,
   });
 
   dialog.addButton(confirmText, {
-    variant: 'filled',
+    variant: 'confirm', // Use new confirm style
     onClick: onConfirm,
   });
 
@@ -440,13 +450,56 @@ export function createMaterialChoice(app, options = {}) {
     currentY += 60; // Button height + spacing
   });
 
-  // Add cancel button if provided
+  // Add cancel button if provided with better styling
   if (onCancel) {
     dialog.addButton('Cancel', {
-      variant: 'text',
+      variant: 'outlined',
       onClick: onCancel,
     });
   }
+
+  return dialog;
+}
+
+/**
+ * Create a Material Design destructive dialog (for delete confirmations)
+ */
+export function createMaterialDestructiveDialog(app, options = {}) {
+  const {
+    title = 'Delete',
+    message = 'Are you sure you want to delete this? This action cannot be undone.',
+    confirmText = 'Delete',
+    cancelText = 'Cancel',
+    onConfirm = null,
+    onCancel = null,
+  } = options;
+
+  const dialog = createMaterialDialog(app, {
+    type: MATERIAL_DIALOG_TYPES.CONFIRM,
+    title,
+    ...options
+  });
+
+  // Add message content with word wrapping for long messages
+  if (message) {
+    const messageText = createMaterialText(message, 'bodyLarge', {
+      wordWrap: true,
+      wordWrapWidth: 380, // Leave room for dialog padding
+      align: 'left'
+    });
+    dialog.addContent(messageText);
+  }
+
+  // Add buttons with destructive styling
+  dialog.addButton(cancelText, {
+    variant: 'outlined',
+    onClick: onCancel,
+  });
+
+  dialog.addButton(confirmText, {
+    variant: 'destructive', // Use new destructive style
+    onClick: onConfirm,
+  });
 
   return dialog;
 }
@@ -499,16 +552,16 @@ export function createMaterialForm(app, options = {}) {
     formContainer.materialLayout.addChild(fieldContainer);
   });
 
-  // Add form buttons
+  // Add form buttons with improved styling
   if (onCancel) {
     dialog.addButton(cancelText, {
-      variant: 'text',
+      variant: 'outlined',
       onClick: onCancel,
     });
   }
 
   dialog.addButton(submitText, {
-    variant: 'filled',
+    variant: 'confirm', // Use new confirm style for positive actions
     onClick: () => onSubmit?.(formData),
   });
 
