@@ -1,6 +1,6 @@
 import { initApp, root } from "./core/app.js";
 import { state } from "./core/state.js";
-import { createMaterialHUD } from "./catan/ui.js";
+import { createMaterialHUD } from "./catan/ui/index.js";
 import { createResourcePanel } from "./catan/resourcePanel.js";
 import { buildGraph } from "./catan/graph.js";
 import { makeBuilder } from "./catan/build.js";
