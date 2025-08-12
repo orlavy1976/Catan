@@ -1,5 +1,6 @@
 import { BUILD_COSTS, PLAYER_COLORS } from "../config/constants.js";
 import { patch } from "./stateStore.js";
+import { updateLongestRoad } from "./longestRoad.js";
 
 /**
  * מצב "בניית כביש": מציג קצוות חוקיים, גובה עלות (אלא אם free), ומציב.
@@ -53,6 +54,12 @@ export function startBuildRoad(context, opts = {}) {
         if (!free) pay(p.resources, BUILD_COSTS.road);
         p.roads.push(eId);
       });
+
+      // Update longest road calculation after building
+      const { changed, owner, length } = updateLongestRoad(state, graph);
+      if (changed) {
+        console.log(`🛤️ Longest road updated: Player ${(owner ?? -1) + 1} with ${length} roads`);
+      }
 
       // ציור בפועל
       builder.placeRoad(eId, player.colorIdx);

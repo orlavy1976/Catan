@@ -1,5 +1,6 @@
 import { PLAYER_COLORS } from "../config/constants.js";
 import { patch } from "./stateStore.js";
+import { updateLongestRoad } from "./longestRoad.js";
 
 // צבע לשם לצורך באנר
 function colorName(idx){ return ["Red","Blue","Orange","Green"][idx] || "P"; }
@@ -173,6 +174,13 @@ export function startSetupPhase({
         patch(s => { s.players[s.currentPlayer - 1].roads.push(eId); });
         builder.placeRoad(eId, currentPlayer().colorIdx);
         occupiedEdges.add(eId);
+        
+        // Update longest road calculation after placing setup road
+        const { changed, owner, length } = updateLongestRoad(state, graph);
+        if (changed) {
+          console.log(`🛤️ Setup: Longest road updated: Player ${(owner ?? -1) + 1} with ${length} roads`);
+        }
+        
         nextPlayerSetup();
       });
       interactiveLayer.addChild(hit);

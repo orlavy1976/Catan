@@ -42,10 +42,13 @@ export function playYearOfPlenty({ app, hud, state, resPanel, refreshScores }) {
       selectedResources.forEach(resource => {
         me.resources[resource] = (me.resources[resource] || 0) + 1;
       });
+      
+      // Remove the Year of Plenty card from inventory
+      me.dev.year_of_plenty = Math.max(0, (me.dev.year_of_plenty || 0) - 1);
     });
 
     // Update UI
-    resPanel?.updateResources?.(state.players);
+    resPanel?.updateResources?.(state.players, state);
     refreshScores?.();
     
     // Show result

@@ -4,9 +4,12 @@ import { enterRobberMove } from "../../robber.js";
 export function playKnight({ app, hud, state, resPanel, boardC, tileSprites, robberSpriteRef, graph, layout, refreshHudAvailability }) {
   const currentPlayer = state.players[state.currentPlayer - 1];
   
-  // Play the knight
+  // Play the knight and remove it from inventory
   patch(s => {
-    s.players[s.currentPlayer - 1].knightsPlayed++;
+    const me = s.players[s.currentPlayer - 1];
+    me.knightsPlayed++;
+    // Remove the knight card from inventory
+    me.dev.knight = Math.max(0, (me.dev.knight || 0) - 1);
   });
 
   // Update state to robber move phase
@@ -21,7 +24,7 @@ export function playKnight({ app, hud, state, resPanel, boardC, tileSprites, rob
     // Use proper resource validation instead of enabling everything
     refreshHudAvailability();
     hud.showResult("Robber moved.");
-    resPanel?.updateResources?.(state.players);
+    resPanel?.updateResources?.(state.players, state);
   });
 }
 

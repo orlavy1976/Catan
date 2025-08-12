@@ -11,6 +11,32 @@ import {
 
 const RES_ORDER = ["brick","wood","wheat","sheep","ore"];
 
+function createLongestRoadIcon() {
+  const container = new PIXI.Container();
+  
+  // Create crown icon for longest road
+  const bg = new PIXI.Graphics();
+  bg.beginFill(MATERIAL_COLORS.semantic.warning); // Golden color
+  bg.drawRoundedRect(0, 0, 24, 36, 4);
+  bg.endFill();
+  container.addChild(bg);
+
+  // Crown symbol (simplified)
+  const crown = new PIXI.Text("👑", { 
+    fontSize: 14, 
+    fill: MATERIAL_COLORS.neutral[0] 
+  });
+  crown.anchor.set(0.5);
+  crown.x = 12;
+  crown.y = 10;
+  container.addChild(crown);
+
+  // Initially hidden
+  container.visible = false;
+  
+  return { container };
+}
+
 export function makePlayerRow(player) {
   // Create the base Material Design row
   const materialRow = createMaterialRow({
@@ -39,6 +65,10 @@ export function makePlayerRow(player) {
   container.addChild(devCardIcon.container);
   counters.devCards = devCardIcon.setCount;
 
+  // Longest Road indicator (crown icon)
+  const longestRoadIcon = createLongestRoadIcon();
+  container.addChild(longestRoadIcon.container);
+
   // Position resource icons with Material Design spacing
   const iconStartX = 80; // Fixed start position after player name area
   const iconSpacing = 40; // Adjusted spacing for smaller icons
@@ -51,6 +81,10 @@ export function makePlayerRow(player) {
   // Position development card icon after resource icons
   devCardIcon.container.x = iconStartX + (5 * iconSpacing) + MATERIAL_SPACING[2];
   devCardIcon.container.y = 10; // Slightly higher for different icon size
+
+  // Position longest road icon after dev card icon
+  longestRoadIcon.container.x = iconStartX + (5 * iconSpacing) + MATERIAL_SPACING[2] + 50;
+  longestRoadIcon.container.y = 10; // Center vertically
 
   // Track resource counts for secondary text
   const resourceCounts = {};
@@ -77,6 +111,10 @@ export function makePlayerRow(player) {
     materialRow.setActive(active);
   }
 
+  function setLongestRoad(hasLongestRoad) {
+    longestRoadIcon.container.visible = hasLongestRoad;
+  }
+
   function updateSecondaryText() {
     // Create a summary text showing total resources
     const totalResources = Object.values(resourceCounts).reduce((sum, count) => sum + (count || 0), 0);
@@ -89,7 +127,7 @@ export function makePlayerRow(player) {
     materialRow.resize(width);
     
     // Adjust icon spacing based on available width
-    const availableWidth = width - iconStartX - 60; // Leave space for dev card
+    const availableWidth = width - iconStartX - 120; // Leave space for dev card and longest road
     const adjustedSpacing = Math.min(40, availableWidth / 5);
     
     resourceIcons.forEach((icon, idx) => {
@@ -97,6 +135,7 @@ export function makePlayerRow(player) {
     });
     
     devCardIcon.container.x = iconStartX + (5 * adjustedSpacing) + MATERIAL_SPACING[2];
+    longestRoadIcon.container.x = iconStartX + (5 * adjustedSpacing) + MATERIAL_SPACING[2] + 50;
   }
 
   // Initialize secondary text
@@ -107,6 +146,7 @@ export function makePlayerRow(player) {
     setResource, 
     setDevCards, 
     setActive,
+    setLongestRoad,
     resize: resize
   };
 }

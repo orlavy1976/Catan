@@ -46,6 +46,8 @@ export function startBuildCity(context) {
         pay(p.resources, BUILD_COSTS.city);
         const idx = p.settlements.indexOf(vId);
         if (idx >= 0) p.settlements.splice(idx, 1);
+        // Ensure cities array exists
+        p.cities = p.cities || [];
         p.cities.push(vId);
       });
 

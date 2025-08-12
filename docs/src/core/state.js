@@ -7,10 +7,10 @@ export const state = {
   robberTile: null,
 
   players: [
-    { id: 1, colorIdx: 0, settlements: [], roads: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
-    { id: 2, colorIdx: 1, settlements: [], roads: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
-    { id: 3, colorIdx: 2, settlements: [], roads: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
-    { id: 4, colorIdx: 3, settlements: [], roads: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
+    { id: 1, colorIdx: 0, settlements: [], roads: [], cities: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
+    { id: 2, colorIdx: 1, settlements: [], roads: [], cities: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
+    { id: 3, colorIdx: 2, settlements: [], roads: [], cities: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
+    { id: 4, colorIdx: 3, settlements: [], roads: [], cities: [], resources: { brick:0, wood:0, wheat:0, sheep:0, ore:0 } },
   ],
 
   setup: {

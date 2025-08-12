@@ -46,7 +46,7 @@ export function createResourcePanel(app, state) {
       }
     });
   }
-  function updateResources(players) {
+  function updateResources(players, gameState = state) {
     players.forEach((p, idx) => {
       const row = rows[idx];
       if (!row) return;
@@ -57,6 +57,12 @@ export function createResourcePanel(app, state) {
       // Calculate and update development card count
       const devCardCount = calculateDevCardCount(p);
       row.setDevCards(devCardCount);
+      
+      // Update longest road indicator
+      const hasLongestRoad = gameState.longestRoad?.owner === idx;
+      if (row.setLongestRoad) {
+        row.setLongestRoad(hasLongestRoad);
+      }
     });
   }
 
@@ -81,7 +87,7 @@ export function createResourcePanel(app, state) {
   buildRows();
 
   // Initialize
-  updateResources(state.players);
+  updateResources(state.players, state);
   setCurrent((state.currentPlayer ?? 1) - 1);
 
   return { container: panel.container, updateResources, setCurrent };

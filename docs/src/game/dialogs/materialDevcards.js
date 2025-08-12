@@ -521,4 +521,10 @@ function playDevCard(card, deps) {
     default:
       console.warn('Unknown card type:', card.type);
   }
+  
+  // Ensure resource panel is updated after any dev card is played
+  setTimeout(() => {
+    resPanel?.updateResources?.(state.players, state);
+    refreshHudAvailability?.();
+  }, 100);
 }

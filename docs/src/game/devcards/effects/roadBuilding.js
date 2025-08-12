@@ -1,5 +1,13 @@
+import { patch } from "../../stateStore.js";
+
 export function playRoadBuilding({ app, hud, state, boardC, graph, builder, startBuildRoad, refreshHudAvailability }) {
   let remaining = 2;
+
+  // Remove the Road Building card from inventory immediately
+  patch(s => {
+    const me = s.players[s.currentPlayer - 1];
+    me.dev.road_building = Math.max(0, (me.dev.road_building || 0) - 1);
+  });
 
   hud.showResult("Road Building — place 2 roads for free.");
   toggleHud(hud, false);

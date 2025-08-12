@@ -29,10 +29,13 @@ export function playMonopoly({ app, hud, state, resPanel, refreshScores }) {
           totalTaken += amount;
         }
       });
+      
+      // Remove the Monopoly card from inventory
+      me.dev.monopoly = Math.max(0, (me.dev.monopoly || 0) - 1);
     });
 
     // Update UI
-    resPanel?.updateResources?.(state.players);
+    resPanel?.updateResources?.(state.players, state);
     refreshScores?.();
     
     // Show result

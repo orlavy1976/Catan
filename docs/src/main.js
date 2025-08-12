@@ -15,6 +15,7 @@ import { subscribe, patch } from "./game/stateStore.js";
 import { startBuildRoad } from "./game/buildRoad.js";
 import { startBuildSettlement } from "./game/buildSettlement.js";
 import { startBuildCity } from "./game/buildCity.js";
+import { updateLongestRoad } from "./game/longestRoad.js";
 import { rollDice } from "./catan/rules.js";
 import { TILE_SIZE, BUILD_COSTS } from "./config/constants.js";
 
@@ -175,7 +176,7 @@ const hud = createMaterialHUD(
 
 const resPanel = createResourcePanel(app, state);
 subscribe((s) => {
-  resPanel.updateResources(s.players);
+  resPanel.updateResources(s.players, s);
   resPanel.setCurrent(s.currentPlayer - 1);
   refreshHudAvailability();
   refreshScores();
@@ -256,6 +257,12 @@ function initializeGame() {
           // Restore all buildings visually on the board
           restoreBuildingsFromState();
           
+          // Recalculate longest road from restored state
+          if (graph) {
+            const { owner, length } = updateLongestRoad(state, graph);
+            console.log(`🛤️ Restored longest road: Player ${(owner ?? -1) + 1} with ${length} roads`);
+          }
+          
           // Ensure critical play phase state is set correctly
           if (state.phase === "play") {
             // If _hasRolled is not saved or is undefined, infer it from game state
@@ -283,7 +290,7 @@ function initializeGame() {
           refreshScores();
           refreshHudAvailability();
           resPanel.setCurrent(state.currentPlayer - 1);
-          resPanel.updateResources(state.players);
+          resPanel.updateResources(state.players, state);
           
           // Update HUD banner and continue the appropriate phase
           if (state.phase === "setup") {
@@ -601,7 +608,7 @@ function debugInit() {
   resPanel.setCurrent(state.currentPlayer - 1);
   
   // Force update resource panel to show debug dev cards
-  resPanel.updateResources(state.players);
+  resPanel.updateResources(state.players, state);
   console.log("🐛 DEBUG: debugInit complete, final first player dev cards:", state.players[0].dev);
 }
 
