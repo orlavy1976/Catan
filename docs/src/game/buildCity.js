@@ -30,6 +30,8 @@ export function startBuildCity(context) {
   candidates.forEach(vId => builder.drawCityGhost(vId, color, 0.7));
 
   const interactive = new PIXI.Container();
+  interactive.zIndex = 1000; // Ensure hit areas are on top
+  interactive.sortableChildren = true;
   boardC.addChild(interactive);
 
   candidates.forEach(vId => {

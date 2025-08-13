@@ -16,12 +16,34 @@ export function enterRobberMove({ app, boardC, hud, state, tileSprites, robberSp
   tileSprites.forEach((tileG, idx) => {
     if (idx === state.robberTile) return;
 
-    // היילייט
+    // היילייט עם Material Design עם אפקט זוהר
     const ring = new PIXI.Graphics();
-    ring.lineStyle({ width: 4, color: 0x000000, alpha: 0.35 });
+    
+    // צל חיצוני לעומק
+    ring.lineStyle({ width: 6, color: 0x000000, alpha: 0.15 });
+    ring.drawCircle(tileG.center.x, tileG.center.y, 58);
+    
+    // קו עיקרי בצבע חם
+    ring.lineStyle({ width: 3, color: 0xff6b35, alpha: 0.9 });
     ring.drawCircle(tileG.center.x, tileG.center.y, 56);
-    ring.alpha = 0.8;
+    
+    // קו פנימי בהיר לאפקט זוהר
+    ring.lineStyle({ width: 1, color: 0xffa726, alpha: 0.7 });
+    ring.drawCircle(tileG.center.x, tileG.center.y, 54);
+    
+    ring.alpha = 0.0; // התחלה שקופה לאנימציה
     interactiveLayer.addChild(ring);
+    
+    // אנימציית fade-in חלקה
+    let fadeProgress = 0;
+    const fadeIn = () => {
+      fadeProgress += 0.05;
+      ring.alpha = Math.min(fadeProgress, 0.85);
+      if (fadeProgress < 0.85) {
+        requestAnimationFrame(fadeIn);
+      }
+    };
+    requestAnimationFrame(fadeIn);
 
     // שכבת היטים
     const hit = new PIXI.Graphics();
@@ -31,22 +53,77 @@ export function enterRobberMove({ app, boardC, hud, state, tileSprites, robberSp
     hit.interactive = true;
     hit.buttonMode = true;
     hit.on("pointertap", () => {
-      // להזיז את השודד
+      // אנימציה חלקה להזזת השודד
       const robber = robberSpriteRef.sprite;
-      robber.x = tileG.center.x;
-      robber.y = tileG.center.y;
-      robber.zIndex = 9999;
-      boardC.addChild(robber);
-      state.robberTile = idx;
+      const startX = robber.x;
+      const startY = robber.y;
+      const targetX = tileG.center.x;
+      const targetY = tileG.center.y;
+      
+      // אנימציה של תזוזה עם easing
+      const animationDuration = 300; // ms
+      let startTime = null;
+      
+      const animateRobber = (timestamp) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / animationDuration, 1);
+        
+        // Easing function (ease-out)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        // לרפרף את השודד במהלך התנועה
+        robber.alpha = 0.7 + Math.sin(elapsed * 0.02) * 0.1;
+        
+        // חישוב מיקום נוכחי
+        robber.x = startX + (targetX - startX) * easeOut;
+        robber.y = startY + (targetY - startY) * easeOut;
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateRobber);
+        } else {
+          // סיום האנימציה עם אפקט הופעה דרמטי
+          robber.x = targetX;
+          robber.y = targetY;
+          robber.alpha = 1;
+          robber.zIndex = 9999;
+          boardC.addChild(robber);
+          state.robberTile = idx;
 
-      // ניקוי
-      boardC.removeChild(ring);
-      clear();
+          // אפקט זוהר רגעי במיקום החדש
+          const flashEffect = new PIXI.Graphics();
+          flashEffect.beginFill(0xff4444, 0.6);
+          flashEffect.drawCircle(targetX, targetY, 30);
+          flashEffect.endFill();
+          boardC.addChild(flashEffect);
+          
+          // אנימציית דהייה של האפקט
+          let flashAlpha = 0.6;
+          const fadeFlash = () => {
+            flashAlpha -= 0.03;
+            flashEffect.alpha = flashAlpha;
+            flashEffect.scale.x = flashEffect.scale.y = 1 + (0.6 - flashAlpha) * 2;
+            
+            if (flashAlpha <= 0) {
+              boardC.removeChild(flashEffect);
+            } else {
+              requestAnimationFrame(fadeFlash);
+            }
+          };
+          requestAnimationFrame(fadeFlash);
 
-      // אחרי הזזה — גניבה (מעבירים גם app כדי להוסיף overlay לבמה)
-      handleSteal({ app, hud, state, tileIdx: idx, graph, resPanel }, () => {
-        onDone?.();
-      });
+          // ניקוי
+          boardC.removeChild(ring);
+          clear();
+
+          // אחרי הזזה — גניבה (מעבירים גם app כדי להוסיף overlay לבמה)
+          handleSteal({ app, hud, state, tileIdx: idx, graph, resPanel }, () => {
+            onDone?.();
+          });
+        }
+      };
+      
+      requestAnimationFrame(animateRobber);
     });
 
     interactiveLayer.addChild(hit);

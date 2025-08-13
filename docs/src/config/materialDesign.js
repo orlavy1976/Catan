@@ -351,7 +351,7 @@ export const MATERIAL_BUTTONS = {
     backgroundDisabled: 'transparent',
     border: MATERIAL_COLORS.primary[300],          // Even lighter border for better visibility
     borderHover: MATERIAL_COLORS.primary[400],
-    text: MATERIAL_COLORS.primary[300],            // Much lighter text for better visibility
+  text: MATERIAL_COLORS.neutral[0],              // White text for maximum contrast
     textHover: MATERIAL_COLORS.neutral[0],
     textDisabled: MATERIAL_COLORS.neutral[400],
     borderRadius: 8,
@@ -365,7 +365,7 @@ export const MATERIAL_BUTTONS = {
     backgroundHover: MATERIAL_COLORS.primary[600], // Consistent with others
     backgroundPressed: MATERIAL_COLORS.primary[700],
     backgroundDisabled: 'transparent',
-    text: MATERIAL_COLORS.primary[300],            // Much lighter text for better visibility
+  text: MATERIAL_COLORS.neutral[0],              // White text for maximum contrast
     textHover: MATERIAL_COLORS.neutral[0],
     textDisabled: MATERIAL_COLORS.neutral[400],
     borderRadius: 8,
@@ -379,7 +379,7 @@ export const MATERIAL_BUTTONS = {
     backgroundHover: 0xdc2626,                     // Slightly darker red
     backgroundPressed: 0xb91c1c,                   // Even darker when pressed
     backgroundDisabled: MATERIAL_COLORS.neutral[600],
-    text: MATERIAL_COLORS.neutral[0],
+  text: MATERIAL_COLORS.neutral[0], // Already white, keep for filled
     textDisabled: MATERIAL_COLORS.neutral[400],
     elevation: MATERIAL_SHADOWS.elevation1,
     elevationHover: MATERIAL_SHADOWS.elevation2,
@@ -393,7 +393,7 @@ export const MATERIAL_BUTTONS = {
     backgroundHover: 0x059669,                     // Slightly darker green
     backgroundPressed: 0x047857,                   // Even darker when pressed
     backgroundDisabled: MATERIAL_COLORS.neutral[600],
-    text: MATERIAL_COLORS.neutral[0],
+  text: MATERIAL_COLORS.neutral[0], // Already white, keep for confirm
     textDisabled: MATERIAL_COLORS.neutral[400],
     elevation: MATERIAL_SHADOWS.elevation1,
     elevationHover: MATERIAL_SHADOWS.elevation2,
@@ -407,7 +407,7 @@ export const MATERIAL_BUTTONS = {
     backgroundHover: MATERIAL_COLORS.primary[500],
     backgroundPressed: MATERIAL_COLORS.primary[700],
     backgroundDisabled: MATERIAL_COLORS.neutral[600],
-    text: MATERIAL_COLORS.neutral[0],
+  text: MATERIAL_COLORS.neutral[0], // Already white, keep for destructive
     textDisabled: MATERIAL_COLORS.neutral[400],
     elevation: MATERIAL_SHADOWS.elevation3,
     elevationHover: MATERIAL_SHADOWS.elevation4,
