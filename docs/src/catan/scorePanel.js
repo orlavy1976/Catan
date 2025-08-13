@@ -18,6 +18,7 @@ export function createScorePanel(app, state) {
     position: 'bottom-right',
     minWidth: 200,
     minHeight: 80,
+    maxHeight: window.innerHeight ? Math.floor(window.innerHeight * 0.92) : 600,
     variant: 'elevated',
     responsive: true
   });

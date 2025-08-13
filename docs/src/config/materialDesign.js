@@ -96,7 +96,7 @@ export const MATERIAL_COLORS = {
     brick: 0xb04a3a,   // Rich brick red
     wood: 0x256d39,    // Deep forest green
     wheat: 0xd8b847,   // Golden wheat yellow
-    sheep: 0x7bbf6a,   // Pastoral green
+    sheep: 0x8fcc5f,   // Bright pastoral green (updated to match new texture)
     ore: 0x6a6f7b,     // Mountain gray
     desert: 0xfbbf24,  // Sandy yellow
   },
@@ -122,9 +122,9 @@ export const MATERIAL_COLORS = {
       text: 0x2c2c2c 
     },
     sheep: { 
-      primary: 0x7bbf6a, 
-      light: 0x93cc82, 
-      dark: 0x669b56,
+      primary: 0x8fcc5f, 
+      light: 0xa3d577, 
+      dark: 0x7ab04a,
       text: 0x2c2c2c 
     },
     ore: { 

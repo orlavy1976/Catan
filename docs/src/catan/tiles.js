@@ -10,13 +10,25 @@ export function drawBoard(root, app, options = {}) {
   boardC.sortableChildren = true; // אפשר מיון לפי Z-index
   root.addChild(boardC);
 
-  // Sea backdrop with texture
+  // Sea backdrop with texture - always covers the full screen
   const sea = new PIXI.Graphics();
-  sea.beginTextureFill({ texture: textures.water });
-  sea.drawRoundedRect(-700, -600, 1400, 1200, 60);
-  sea.endFill();
-  sea.alpha = 0.95;
-  boardC.addChild(sea);
+  function drawSea(x = 0, y = 0) {
+    sea.clear();
+    sea.beginTextureFill({ texture: textures.water });
+    sea.drawRect(0, 0, app.renderer.width, app.renderer.height);
+    sea.endFill();
+    sea.alpha = 0.97;
+    sea.zIndex = -1000;
+    sea.position.set(-x, -y);
+  }
+  drawSea();
+  boardC.addChildAt(sea, 0);
+  // Responsive: redraw sea on resize
+  window.addEventListener('resize', () => {
+    drawSea(boardC.x, boardC.y);
+  });
+  // החזר פונקציה לעדכון הים מבחוץ (layoutBoard)
+  boardC._updateSea = (x, y) => drawSea(x, y);
 
   const axials = standardAxials();
 

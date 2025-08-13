@@ -15,6 +15,7 @@ export function createResourcePanel(app, state) {
     position: 'bottom-left',
     minWidth: 420,
     minHeight: 140,
+    maxHeight: window.innerHeight ? Math.floor(window.innerHeight * 0.92) : 600,
     variant: 'elevated',
     responsive: true
   });

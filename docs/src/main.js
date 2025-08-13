@@ -58,49 +58,26 @@ function layoutBoard() {
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   
   // Calculate available space considering UI panels
-  const uiPadding = {
-    left: 380,    // Space for notification panels + padding
-    right: 240,   // Space for action buttons + padding  
-    top: 60,      // Space for top elements
-    bottom: 120   // Space for resource panels + padding
-  };
-  
-  // Responsive adjustments for smaller screens
   const screenWidth = app.renderer.width;
   const screenHeight = app.renderer.height;
-  
-  if (screenWidth < 1200) {
-    uiPadding.left = Math.min(320, screenWidth * 0.25);
-    uiPadding.right = Math.min(200, screenWidth * 0.2);
-  }
-  
-  if (screenHeight < 800) {
-    uiPadding.top = Math.min(40, screenHeight * 0.05);
-    uiPadding.bottom = Math.min(80, screenHeight * 0.1);
-  }
-  
-  console.log("📐 Layout board with UI padding:", uiPadding, "Screen:", screenWidth, "x", screenHeight);
-  
-  const availableWidth = screenWidth - uiPadding.left - uiPadding.right;
-  const availableHeight = screenHeight - uiPadding.top - uiPadding.bottom;
-  
-  const pad = 60; // Internal board padding
+
+  // חישוב פשוט: הלוח תמיד ממורכז במסך, בלי תלות בפאנלים
+  const pad = 60;
   const bw = (maxX - minX) + pad * 2;
   const bh = (maxY - minY) + pad * 2;
-  
-  const sx = availableWidth / bw;
-  const sy = availableHeight / bh;
-  const s = Math.min(sx, sy, 1.2); // Max scale limit to prevent over-sizing
-  
-  // Center the board in the available space
+  const sx = screenWidth / bw;
+  const sy = screenHeight / bh;
+  const s = Math.min(sx, sy, 1.1);
   const boardWidth = bw * s;
   const boardHeight = bh * s;
-  
   boardC.scale.set(s);
-  boardC.x = uiPadding.left + (availableWidth - boardWidth) / 2 - (minX - pad) * s;
-  boardC.y = uiPadding.top + (availableHeight - boardHeight) / 2 - (minY - pad) * s;
-  
-  console.log("📐 Board positioned at:", boardC.x, boardC.y, "Scale:", s);
+  boardC.x = Math.round((screenWidth - boardWidth) / 2 - (minX - pad) * s);
+  boardC.y = Math.round((screenHeight - boardHeight) / 2 - (minY - pad) * s);
+  // עדכון מיקום הים
+  if (typeof boardC._updateSea === 'function') {
+    boardC._updateSea(boardC.x, boardC.y);
+  }
+  console.log("📐 Board centered at:", boardC.x, boardC.y, "Scale:", s);
 }
 
 // Initialize board and UI components after state is loaded

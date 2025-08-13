@@ -32,6 +32,7 @@ export function createMaterialPanel(app, options = {}) {
     position = 'bottom-left',
     minWidth = 200,
     minHeight = 80,
+    maxHeight = null, // חדש: גובה מקסימלי אופציונלי
     responsive = true,
     zIndex = Z_INDEX.panels,
     variant = 'elevated',
@@ -40,29 +41,33 @@ export function createMaterialPanel(app, options = {}) {
 
   const panel = new PIXI.Container();
   panel.zIndex = zIndex;
-  
+
   // Background graphics
   const bg = new PIXI.Graphics();
   panel.addChild(bg);
-  
+
   // Title text
   const titleText = createMaterialText(title, 'headlineSmall');
   titleText.style.fill = MATERIAL_COLORS.neutral[100];
   panel.addChild(titleText);
-  
-  // Content container for dynamic content
+
+  // Content container for dynamic content (with scroll support)
+  const contentMask = new PIXI.Graphics();
+  panel.addChild(contentMask);
   const contentContainer = new PIXI.Container();
+  contentContainer.mask = contentMask;
   panel.addChild(contentContainer);
-  
+
   // Shadow container for elevation effects
   const shadowContainer = new PIXI.Container();
   shadowContainer.zIndex = zIndex - 1;
-  
+
   // State management
   let currentWidth = minWidth;
   let currentHeight = minHeight;
   let contentHeight = 0;
   let isVisible = true;
+  let scrollY = 0;
   
   /**
    * Updates panel layout and positioning
@@ -83,26 +88,61 @@ export function createMaterialPanel(app, options = {}) {
     
     // Calculate total content height
     const totalContentHeight = titleHeight + gapAfterTitle + contentHeight;
-    const totalHeight = topPadding + totalContentHeight + bottomPadding;
-    
-    currentWidth = Math.max(minWidth * scaleFactor, minWidth);
-    currentHeight = Math.max(totalHeight, minHeight * scaleFactor);
-    
+  // הגבלת גובה מקסימלי לפאנל (90% מהמסך או maxHeight מהאופציות)
+  const maxPanelHeight = maxHeight ? Math.min(maxHeight, screenHeight * 0.95) : Math.max(minHeight, screenHeight * 0.9);
+  const totalHeight = topPadding + Math.min(totalContentHeight, maxPanelHeight - topPadding - bottomPadding) + bottomPadding;
+
+  currentWidth = Math.max(minWidth * scaleFactor, minWidth);
+  currentHeight = Math.max(totalHeight, minHeight * scaleFactor);
+
     // Draw background based on variant
     drawPanelBackground();
-    
+
     // Position title
     titleText.x = MATERIAL_SPACING[4] * scaleFactor;
     titleText.y = MATERIAL_SPACING[4] * scaleFactor;
     titleText.scale.set(scaleFactor);
-    
+
+    // Mask for scrollable content
+    contentMask.clear();
+    contentMask.beginFill(0xffffff, 1);
+    contentMask.drawRoundedRect(
+      MATERIAL_SPACING[4] * scaleFactor,
+      titleText.y + titleHeight + gapAfterTitle,
+      currentWidth - MATERIAL_SPACING[4] * 2 * scaleFactor,
+      currentHeight - (titleText.y + titleHeight + gapAfterTitle) - bottomPadding
+    );
+    contentMask.endFill();
+
     // Position content container
     contentContainer.x = MATERIAL_SPACING[4] * scaleFactor;
-    contentContainer.y = titleText.y + titleHeight + gapAfterTitle;
-    
+    contentContainer.y = titleText.y + titleHeight + gapAfterTitle - scrollY;
+
     // Position panel based on position setting
     positionPanel(screenWidth, screenHeight, responsiveSpacing);
-    
+
+    // גלילה פנימית אם צריך
+    if (contentHeight > (currentHeight - (titleText.y + titleHeight + gapAfterTitle) - bottomPadding)) {
+      // Listen for wheel events (פעם אחת בלבד)
+      if (!panel._hasScrollListener) {
+        panel._hasScrollListener = true;
+        app.view.addEventListener('wheel', (e) => {
+          // רק אם העכבר מעל הפאנל
+          const rect = app.view.getBoundingClientRect();
+          const px = e.clientX - rect.left - panel.x;
+          const py = e.clientY - rect.top - panel.y;
+          if (px >= 0 && px <= currentWidth && py >= 0 && py <= currentHeight) {
+            const maxScroll = contentHeight - (currentHeight - (titleText.y + titleHeight + gapAfterTitle) - bottomPadding);
+            scrollY = Math.max(0, Math.min(scrollY + e.deltaY, maxScroll));
+            contentContainer.y = titleText.y + titleHeight + gapAfterTitle - scrollY;
+          }
+        });
+      }
+    } else {
+      scrollY = 0;
+      contentContainer.y = titleText.y + titleHeight + gapAfterTitle;
+    }
+
     console.log(`📱 Material Panel "${title}" - Size: ${currentWidth.toFixed(0)}x${currentHeight.toFixed(0)}, Position: ${panel.x.toFixed(0)},${panel.y.toFixed(0)}`);
   }
   
