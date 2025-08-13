@@ -11,29 +11,37 @@ import {
 
 const RES_ORDER = ["brick","wood","wheat","sheep","ore"];
 
+
 function createLongestRoadIcon() {
   const container = new PIXI.Container();
-  
-  // Create crown icon for longest road
   const bg = new PIXI.Graphics();
   bg.beginFill(MATERIAL_COLORS.semantic.warning); // Golden color
   bg.drawRoundedRect(0, 0, 24, 36, 4);
   bg.endFill();
   container.addChild(bg);
-
-  // Crown symbol (simplified)
-  const crown = new PIXI.Text("👑", { 
-    fontSize: 14, 
-    fill: MATERIAL_COLORS.neutral[0] 
-  });
+  const crown = new PIXI.Text("👑", { fontSize: 14, fill: MATERIAL_COLORS.neutral[0] });
   crown.anchor.set(0.5);
   crown.x = 12;
   crown.y = 10;
   container.addChild(crown);
-
-  // Initially hidden
   container.visible = false;
-  
+  return { container };
+}
+
+function createLargestArmyIcon() {
+  const container = new PIXI.Container();
+  const bg = new PIXI.Graphics();
+  bg.beginFill(MATERIAL_COLORS.semantic.info); // Blue shield
+  bg.drawRoundedRect(0, 0, 24, 36, 4);
+  bg.endFill();
+  container.addChild(bg);
+  // Shield emoji (or swords if you prefer)
+  const shield = new PIXI.Text("🛡️", { fontSize: 15, fill: MATERIAL_COLORS.neutral[0] });
+  shield.anchor.set(0.5);
+  shield.x = 12;
+  shield.y = 10;
+  container.addChild(shield);
+  container.visible = false;
   return { container };
 }
 
@@ -68,6 +76,9 @@ export function makePlayerRow(player) {
   // Longest Road indicator (crown icon)
   const longestRoadIcon = createLongestRoadIcon();
   container.addChild(longestRoadIcon.container);
+  // Largest Army indicator (shield icon)
+  const largestArmyIcon = createLargestArmyIcon();
+  container.addChild(largestArmyIcon.container);
 
   // Position resource icons with Material Design spacing
   const iconStartX = 80; // Fixed start position after player name area
@@ -85,6 +96,9 @@ export function makePlayerRow(player) {
   // Position longest road icon after dev card icon
   longestRoadIcon.container.x = iconStartX + (5 * iconSpacing) + MATERIAL_SPACING[2] + 50;
   longestRoadIcon.container.y = 10; // Center vertically
+  // Position largest army icon after longest road icon
+  largestArmyIcon.container.x = iconStartX + (5 * iconSpacing) + MATERIAL_SPACING[2] + 90;
+  largestArmyIcon.container.y = 10;
 
   // Track resource counts for secondary text
   const resourceCounts = {};
@@ -111,8 +125,12 @@ export function makePlayerRow(player) {
     materialRow.setActive(active);
   }
 
+
   function setLongestRoad(hasLongestRoad) {
     longestRoadIcon.container.visible = hasLongestRoad;
+  }
+  function setLargestArmy(hasLargestArmy) {
+    largestArmyIcon.container.visible = hasLargestArmy;
   }
 
   function updateSecondaryText() {
@@ -147,6 +165,7 @@ export function makePlayerRow(player) {
     setDevCards, 
     setActive,
     setLongestRoad,
+    setLargestArmy,
     resize: resize
   };
 }

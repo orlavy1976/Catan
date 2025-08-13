@@ -48,21 +48,30 @@ export function createResourcePanel(app, state) {
     });
   }
   function updateResources(players, gameState = state) {
+    // מציאת בעל הצבא הגדול ביותר
+    let largestArmyOwner = null;
+    if (gameState.largestArmy?.owner !== undefined) {
+      largestArmyOwner = gameState.largestArmy.owner;
+    } else if (gameState.scores && Array.isArray(gameState.scores)) {
+      const la = gameState.scores.find(s => s.hasLargestArmy);
+      if (la) largestArmyOwner = la.playerIdx;
+    }
     players.forEach((p, idx) => {
       const row = rows[idx];
       if (!row) return;
-      
       // Update resource counts
       RES_ORDER.forEach(k => row.setResource(k, p.resources?.[k] ?? 0));
-      
       // Calculate and update development card count
       const devCardCount = calculateDevCardCount(p);
       row.setDevCards(devCardCount);
-      
       // Update longest road indicator
       const hasLongestRoad = gameState.longestRoad?.owner === idx;
       if (row.setLongestRoad) {
         row.setLongestRoad(hasLongestRoad);
+      }
+      // Update largest army indicator
+      if (row.setLargestArmy) {
+        row.setLargestArmy(largestArmyOwner === idx);
       }
     });
   }
