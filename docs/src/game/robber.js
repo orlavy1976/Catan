@@ -202,7 +202,7 @@ function performSteal(state, fromIdx, toIdx, resPanel, hud) {
   victim.resources[pick]--;
   thief.resources[pick] = (thief.resources[pick] || 0) + 1;
 
-  resPanel?.update?.(state.players);
+  resPanel?.updateResources?.(state.players, state);
   hud.showResult(`Robber: stole 1 ${pick} from P${toIdx+1}`);
 }
 

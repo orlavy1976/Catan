@@ -68,22 +68,37 @@ function longestForPlayer(playerIdx, state, graph, ownByVertex) {
     }
   }
 
-  // DFS longest simple path in edge graph (small graph—OK)
+  // DFS longest simple path in edge graph (no repeated edge or vertex)
   let best = 1;
-  const visited = new Set();
-  function dfs(edgeId) {
-    visited.add(edgeId);
+  const visitedEdges = new Set();
+  function dfs(edgeId, usedVertices) {
+    visitedEdges.add(edgeId);
+    const e = graph.edges[edgeId];
     let localBest = 1;
     for (const n of neighbors.get(edgeId)) {
-      if (visited.has(n)) continue;
-      localBest = Math.max(localBest, 1 + dfs(n));
+      if (visitedEdges.has(n)) continue;
+      const ne = graph.edges[n];
+      // נוודא שלא חוזרים על קודקוד באמצע הדרך
+      // edgeId: (e.a, e.b), n: (ne.a, ne.b)
+      // מצא את הקודקוד המשותף
+      const shared = (e.a === ne.a || e.a === ne.b) ? e.a : e.b;
+      if (usedVertices.has(shared)) continue;
+      usedVertices.add(shared);
+      localBest = Math.max(localBest, 1 + dfs(n, usedVertices));
+      usedVertices.delete(shared);
     }
-    visited.delete(edgeId);
+    visitedEdges.delete(edgeId);
     return localBest;
   }
 
   for (const eId of myEdges) {
-    best = Math.max(best, dfs(eId));
+    // נתחיל עם שני קודקודים – קצוות הכביש הראשון
+    const e = graph.edges[eId];
+    // ננסה להתחיל מכל קצה
+    [e.a, e.b].forEach(startV => {
+      const usedVertices = new Set([startV]);
+      best = Math.max(best, dfs(eId, usedVertices));
+    });
   }
 
   return best;
